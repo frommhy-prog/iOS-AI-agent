@@ -176,16 +176,16 @@ jobs:
 
           xcodegen generate
 
-          python3 -c '
-          with open("NativeAgentApp.xcodeproj/project.pbxproj", "r") as f:
-              c = f.read()
-          import re
-          c = re.sub(r"objectVersion = d+;", "objectVersion = 56;", c)
-          c = re.sub(r"compatibilityVersion = "[^"]+";", "compatibilityVersion = "Xcode 14.0";", c)
-          with open("NativeAgentApp.xcodeproj/project.pbxproj", "w") as f:
-              f.write(c)
-          print("工程版本修补完成")
-          '
+          python3 << 'PYEOF'
+import re
+with open("NativeAgentApp.xcodeproj/project.pbxproj", "r") as f:
+    c = f.read()
+c = re.sub(r"objectVersion = d+;", "objectVersion = 56;", c)
+c = re.sub(r'compatibilityVersion = "[^"]+";', 'compatibilityVersion = "Xcode 14.0";', c)
+with open("NativeAgentApp.xcodeproj/project.pbxproj", "w") as f:
+    f.write(c)
+print("工程版本修补完成")
+PYEOF
 
       - name: 编译原生应用与打包 IPA
         run: |
