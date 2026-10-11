@@ -1,6 +1,4 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
+<html lang="zh-CN"><head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Miao Agent iOS 自动化工作台</title>
@@ -138,6 +136,11 @@
   </header>
 
   <main class="grid">
+    <div class="card" onclick="openTool('interlink')" style="border-color: rgba(99, 102, 241, 0.4); background: linear-gradient(135deg, rgba(22, 30, 49, 0.85) 0%, rgba(49, 46, 129, 0.25) 100%);">
+      <div class="card-icon" style="color: #818cf8; background: rgba(99, 102, 241, 0.15);">⛏️</div>
+      <div class="card-title">Interlink 4小时自动调度</div>
+      <div class="card-desc">自动挖矿、个人空投领取、组队收益与定时轮询</div>
+    </div>
     <div class="card" onclick="openTool('audit')">
       <div class="card-icon" style="color: #38bdf8;">🛡️</div>
       <div class="card-title">代币安全审计</div>
@@ -199,6 +202,54 @@
 
   <script>
     const tools = {
+      interlink: {
+        title: "Interlink Network 4小时自动化调度",
+        render: () => `
+          <div style="background: rgba(99, 102, 241, 0.12); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 10px; padding: 10px; font-size: 12px; color: #c7d2fe; line-height: 1.5;">
+            💎 <strong>自动化特性</strong>：单实例 4 小时周期轮询、防重并发排队锁、本地持久化凭证、个人挖矿奖励与组队收益批量调度。
+          </div>
+          
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <label style="font-size:12px; color:var(--text-sub);">认证令牌 (Bearer Token):</label>
+            <div style="display:flex; gap:8px;">
+              <input id="interlinkToken" type="password" placeholder="输入 Interlink Access Token" style="flex:1;" value="${getInterlinkToken()}">
+              <button class="btn-primary" style="width:auto; padding:0 14px; font-size:12px;" onclick="toggleTokenVis()">显示</button>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:10px;">
+            <div style="flex:1; display:flex; flex-direction:column; gap:6px;">
+              <label style="font-size:12px; color:var(--text-sub);">执行周期 (分钟):</label>
+              <input id="interlinkInterval" type="number" value="${getInterlinkInterval()}" min="10" placeholder="240">
+            </div>
+            <div style="flex:1; display:flex; flex-direction:column; gap:6px;">
+              <label style="font-size:12px; color:var(--text-sub);">组队挖矿收益:</label>
+              <div style="display:flex; align-items:center; height:40px; gap:8px; background:var(--card-bg); border:1px solid var(--border); border-radius:10px; padding:0 10px;">
+                <input id="interlinkGroup" type="checkbox" ${isInterlinkGroupEnabled() ? 'checked' : ''} style="width:18px; height:18px; accent-color:#6366f1;">
+                <label for="interlinkGroup" style="font-size:12px; cursor:pointer;">自动合并申领</label>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex; gap:8px; margin-top:4px;">
+            <button class="btn-primary" style="flex:1;" onclick="runInterlinkOnce()">立即执行单次</button>
+            <button id="btnToggleTimer" class="btn-primary" style="flex:1; background:${interlinkTimerId ? '#ef4444' : 'linear-gradient(135deg, #10b981 0%, #059669 100%)'}; color:#fff;" onclick="toggleInterlinkTimer()">
+              ${interlinkTimerId ? '停止定时调度' : '启动 4小时自动调度'}
+            </button>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; font-size:11px; color:var(--text-sub); margin-top:2px;">
+            <span id="timerStatus">状态: ${interlinkTimerId ? '运行中 (下次执行: ' + getRemainingTimeStr() + ')' : '未运行'}</span>
+            <span id="lockStatus" style="color:${interlinkRunning ? '#f59e0b' : '#10b981'};">${interlinkRunning ? '● 执行中...' : '● 防重锁就绪'}</span>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
+            <span style="font-size:12px; font-weight:600; color:var(--text-main);">调度执行终端日志:</span>
+            <button onclick="clearInterlinkLogs()" style="background:none; border:none; color:var(--text-sub); font-size:11px; cursor:pointer; text-decoration:underline;">清空日志</button>
+          </div>
+          <div id="interlinkLogs" class="result-box" style="height:150px; overflow-y:auto; font-family:monospace; font-size:11px; white-space:pre-wrap; line-height:1.4;">${renderInterlinkLogs()}</div>
+        `
+      },
       audit: {
         title: "链上代币安全审计",
         render: () => `
@@ -420,6 +471,214 @@
         "重定向中间层: https://gateway.target.internal\n" +
         "终端目标安全评级: 正常无钓鱼特征";
     }
-  </script>
-</body>
-</html>
+  
+    // ==================== Interlink 自动化调度模块 ====================
+    let interlinkTimerId = null;
+    let interlinkRunning = false;
+    let nextRunTimestamp = 0;
+    let countdownIntervalId = null;
+    let interlinkLogsList = JSON.parse(localStorage.getItem('interlink_logs') || '[]');
+
+    function getInterlinkToken() {
+      return localStorage.getItem('interlink_token') || '';
+    }
+
+    function getInterlinkInterval() {
+      return localStorage.getItem('interlink_interval') || '240';
+    }
+
+    function isInterlinkGroupEnabled() {
+      const v = localStorage.getItem('interlink_group');
+      return v === null ? true : v === 'true';
+    }
+
+    function toggleTokenVis() {
+      const inp = document.getElementById("interlinkToken");
+      if (!inp) return;
+      inp.type = inp.type === "password" ? "text" : "password";
+    }
+
+    function renderInterlinkLogs() {
+      if (!interlinkLogsList || interlinkLogsList.length === 0) {
+        return "暂无运行日志。配置 Token 后点击「立即执行单次」或「启动 4小时自动调度」。";
+      }
+      return interlinkLogsList.join("\n");
+    }
+
+    function appendInterlinkLog(msg) {
+      const ts = new Date().toLocaleTimeString();
+      const line = `[${ts}] ${msg}`;
+      interlinkLogsList.push(line);
+      if (interlinkLogsList.length > 100) interlinkLogsList.shift();
+      try { localStorage.setItem('interlink_logs', JSON.stringify(interlinkLogsList)); } catch (e) {}
+      const logBox = document.getElementById("interlinkLogs");
+      if (logBox) {
+        logBox.innerText = interlinkLogsList.join("\n");
+        logBox.scrollTop = logBox.scrollHeight;
+      }
+    }
+
+    function clearInterlinkLogs() {
+      interlinkLogsList = [];
+      localStorage.removeItem('interlink_logs');
+      const logBox = document.getElementById("interlinkLogs");
+      if (logBox) logBox.innerText = "日志已清空。";
+    }
+
+    function saveInterlinkSettings() {
+      const tokenInput = document.getElementById("interlinkToken");
+      const intervalInput = document.getElementById("interlinkInterval");
+      const groupInput = document.getElementById("interlinkGroup");
+      if (tokenInput) localStorage.setItem('interlink_token', tokenInput.value.trim());
+      if (intervalInput) localStorage.setItem('interlink_interval', intervalInput.value.trim() || '240');
+      if (groupInput) localStorage.setItem('interlink_group', groupInput.checked ? 'true' : 'false');
+    }
+
+    function getRemainingTimeStr() {
+      if (!nextRunTimestamp) return "待定";
+      const diff = Math.max(0, Math.floor((nextRunTimestamp - Date.now()) / 1000));
+      const h = String(Math.floor(diff / 3600)).padStart(2, '0');
+      const m = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+      const s = String(diff % 60).padStart(2, '0');
+      return `${h}:${m}:${s}`;
+    }
+
+    function updateStatusUI() {
+      const timerStatus = document.getElementById("timerStatus");
+      const lockStatus = document.getElementById("lockStatus");
+      const btn = document.getElementById("btnToggleTimer");
+      if (timerStatus) {
+        timerStatus.innerText = interlinkTimerId ? `状态: 运行中 (倒计时 ${getRemainingTimeStr()})` : "状态: 未运行";
+      }
+      if (lockStatus) {
+        lockStatus.style.color = interlinkRunning ? "#f59e0b" : "#10b981";
+        lockStatus.innerText = interlinkRunning ? "● 执行中..." : "● 防重锁就绪";
+      }
+      if (btn) {
+        btn.innerText = interlinkTimerId ? "停止定时调度" : "启动 4小时自动调度";
+        btn.style.background = interlinkTimerId ? "#ef4444" : "linear-gradient(135deg, #10b981 0%, #059669 100%)";
+      }
+    }
+
+    async function executeInterlinkClaim(endpoint, name, token) {
+      appendInterlinkLog(`发起请求 [${name}] -> ${endpoint}`);
+      
+      // 原生 iOS JSBridge 判定
+      if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.runScriptTask) {
+        try {
+          window.webkit.messageHandlers.runScriptTask.postMessage({
+            type: "interlinkClaim",
+            endpoint: endpoint,
+            name: name,
+            token: token
+          });
+          appendLog(`[原生桥接] 已通过 WebKit JSBridge 派发任务: ${name}`);
+          return;
+        } catch (bridgeErr) {
+          appendInterlinkLog(`[原生桥接错误] ${bridgeErr.message}，降级至标准 Fetch`);
+        }
+      }
+
+      // 标准 Web API 请求
+      try {
+        const resp = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Authorization": "Bearer " + token,
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify({})
+        });
+        const text = await resp.text();
+        let json = null;
+        try { json = JSON.parse(text); } catch (e) {}
+        
+        if (resp.ok) {
+          appendInterlinkLog(`✅ [${name}] 响应成功 (HTTP ${resp.status}): ${json ? JSON.stringify(json) : text.slice(0, 100)}`);
+        } else {
+          appendInterlinkLog(`⚠️ [${name}] 请求返回 (HTTP ${resp.status}): ${text.slice(0, 150)}`);
+        }
+      } catch (err) {
+        appendInterlinkLog(`❌ [${name}] 网络/CORS 异常: ${err.message}`);
+        appendInterlinkLog(`💡 提示: 若在纯网页端跨域受限，可在原生工作台 App 或配置中转代理执行。`);
+      }
+    }
+
+    async function runInterlinkOnce() {
+      saveInterlinkSettings();
+      const token = getInterlinkToken();
+      if (!token) {
+        appendInterlinkLog("❌ 错误: 认证令牌不能为空，请输入 Interlink Bearer Token。");
+        return;
+      }
+
+      if (interlinkRunning) {
+        appendInterlinkLog("⚠️ 并发防护: 正在执行上一次任务，本次跳过。");
+        return;
+      }
+
+      interlinkRunning = true;
+      updateStatusUI();
+      appendInterlinkLog("🚀 开始执行 Interlink Network 自动化流程...");
+
+      try {
+        // 1. 个人 4 小时挖矿空投
+        await executeInterlinkClaim("https://prod.interlinklabs.ai/api/v1/token/claim-airdrop", "个人挖矿空投", token);
+
+        // 2. 组队挖矿收益
+        if (isInterlinkGroupEnabled()) {
+          appendInterlinkLog("等待 2 秒后请求组队挖矿收益...");
+          await new Promise(r => setTimeout(r, 2000));
+          await executeInterlinkClaim("https://prod.interlinklabs.ai/api/v1/mining/group-claim", "组队挖矿收益", token);
+        }
+
+        appendInterlinkLog("✨ 当前轮次执行完毕。");
+      } catch (e) {
+        appendInterlinkLog(`❌ 调度流程异常: ${e.message}`);
+      } finally {
+        interlinkRunning = false;
+        updateStatusUI();
+      }
+    }
+
+    function toggleInterlinkTimer() {
+      saveInterlinkSettings();
+      if (interlinkTimerId) {
+        clearInterval(interlinkTimerId);
+        clearInterval(countdownIntervalId);
+        interlinkTimerId = null;
+        countdownIntervalId = null;
+        nextRunTimestamp = 0;
+        appendInterlinkLog("⏹️ 已停止 4 小时定时轮询调度。");
+        updateStatusUI();
+      } else {
+        const token = getInterlinkToken();
+        if (!token) {
+          appendInterlinkLog("❌ 无法启动: 请先输入并保存 Interlink Bearer Token。");
+          return;
+        }
+
+        const mins = parseInt(getInterlinkInterval(), 10) || 240;
+        const intervalMs = mins * 60 * 1000;
+        nextRunTimestamp = Date.now() + intervalMs;
+        
+        appendInterlinkLog(`▶️ 已启动定时调度，周期为 ${mins} 分钟 (4 小时)。立即触发首轮并保持后台轮询...`);
+        runInterlinkOnce();
+
+        interlinkTimerId = setInterval(() => {
+          nextRunTimestamp = Date.now() + intervalMs;
+          runInterlinkOnce();
+        }, intervalMs);
+
+        countdownIntervalId = setInterval(() => {
+          updateStatusUI();
+        }, 1000);
+
+        updateStatusUI();
+      }
+    }
+</script>
+
+
+</body></html>
