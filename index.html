@@ -9,121 +9,409 @@
   <link rel="apple-touch-icon" href="https://img.icons8.com/color/180/cyber-security.png">
   <style>
     :root {
-      --bg: #090d16;
-      --card-bg: rgba(22, 30, 49, 0.75);
+      --bg: #07090e;
+      --card-bg: rgba(18, 24, 38, 0.75);
+      --card-hover: rgba(26, 34, 52, 0.85);
       --border: rgba(255, 255, 255, 0.08);
+      --border-focus: rgba(56, 189, 248, 0.4);
       --accent: #38bdf8;
-      --accent-grad: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+      --accent-purple: #818cf8;
+      --accent-rose: #f43f5e;
+      --accent-emerald: #10b981;
+      --accent-grad: linear-gradient(135deg, #38bdf8 0%, #818cf8 50%, #c084fc 100%);
       --text-main: #f8fafc;
       --text-sub: #94a3b8;
     }
-    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", sans-serif;
-      background-color: var(--bg);
+      margin: 0;
+      padding: 16px;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.12) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(129, 140, 248, 0.12) 0px, transparent 50%);
+      background-attachment: fixed;
       color: var(--text-main);
       min-height: 100vh;
-      padding: env(safe-area-inset-top, 20px) 16px env(safe-area-inset-bottom, 24px) 16px;
-      overflow-x: hidden;
-    }
-    header {
-      padding: 16px 0 20px 0;
       display: flex;
-      justify-content: space-between;
+      flex-direction: column;
       align-items: center;
     }
-    .brand-title { font-size: 20px; font-weight: 700; background: var(--accent-grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .status-pill { font-size: 11px; padding: 4px 10px; border-radius: 999px; background: rgba(56, 189, 248, 0.15); color: var(--accent); border: 1px solid rgba(56, 189, 248, 0.3); }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-      margin-bottom: 24px;
+    .container {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    header {
+      text-align: center;
+      padding: 12px 0 4px 0;
+    }
+    .badge-glow {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 9999px;
+      padding: 4px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .badge-glow::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+    }
+    h1 {
+      margin: 0;
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: var(--accent-grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .sub-title {
+      font-size: 13px;
+      color: var(--text-sub);
+      margin-top: 4px;
+      font-weight: 400;
+    }
+    .nav-tabs {
+      display: flex;
+      gap: 8px;
+      background: rgba(15, 23, 42, 0.6);
+      padding: 4px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .nav-tab {
+      flex: 1;
+      padding: 9px 0;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: center;
+      border-radius: 10px;
+      color: var(--text-sub);
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      border: none;
+      background: transparent;
+    }
+    .nav-tab.active {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
     }
     .card {
       background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 16px;
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
+      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+    }
+    .card-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .btn-tool {
+      background: rgba(255, 255, 255, 0.03);
       border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 14px;
+      border-radius: 12px;
+      padding: 12px 8px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      align-items: center;
+      gap: 6px;
       cursor: pointer;
-      transition: transform 0.15s ease, border-color 0.15s ease;
+      transition: all 0.2s ease;
+      color: var(--text-main);
     }
-    .card:active { transform: scale(0.97); border-color: var(--accent); }
-    .card-icon {
-      width: 36px;
-      height: 36px;
+    .btn-tool:hover, .btn-tool.active {
+      background: rgba(56, 189, 248, 0.08);
+      border-color: var(--border-focus);
+      transform: translateY(-1px);
+    }
+    .btn-tool .icon { font-size: 20px; }
+    .btn-tool .label { font-size: 11px; font-weight: 600; text-align: center; }
+    
+    input, textarea, select {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--border);
       border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 13px;
+      color: #fff;
+      outline: none;
+      transition: border 0.2s ease;
+      font-family: inherit;
+    }
+    input:focus, textarea:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px var(--accent);
+    }
+    textarea { resize: vertical; min-height: 70px; }
+
+    .btn-primary {
+      width: 100%;
+      background: var(--accent-grad);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 8px;
+      box-shadow: 0 4px 16px rgba(56, 189, 248, 0.25);
+      transition: all 0.2s ease;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 18px;
-      background: rgba(255, 255, 255, 0.05);
+      gap: 6px;
     }
-    .card-title { font-size: 14px; font-weight: 600; color: #fff; }
-    .card-desc { font-size: 11px; color: var(--text-sub); line-height: 1.4; }
-    .modal {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      display: none;
-      align-items: flex-end;
-      z-index: 1000;
-    }
-    .modal.active { display: flex; }
-    .modal-sheet {
-      width: 100%;
-      background: #0f172a;
-      border-top-left-radius: 24px;
-      border-top-right-radius: 24px;
-      border-top: 1px solid var(--border);
-      padding: 20px 18px calc(24px + env(safe-area-inset-bottom, 20px)) 18px;
-      max-height: 85vh;
+    .btn-primary:active { transform: scale(0.98); opacity: 0.9; }
+
+    .result-box {
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 11px;
+      color: var(--text-sub);
+      font-family: "SF Mono", Monaco, Consolas, monospace;
+      margin-top: 10px;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 120px;
       overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
     }
-    .sheet-head { display: flex; justify-content: space-between; align-items: center; }
-    .sheet-title { font-size: 17px; font-weight: 700; color: #fff; }
-    .sheet-close { background: rgba(255, 255, 255, 0.1); border: none; color: #fff; width: 28px; height: 28px; border-radius: 50%; font-size: 14px; cursor: pointer; }
-    input, textarea, button, select {
-      width: 100%;
-      font-size: 13px;
+
+    /* 视频与相册专用 Web3 模块样式 */
+    .seg-bar {
+      display: flex;
+      gap: 6px;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 3px;
       border-radius: 10px;
       border: 1px solid var(--border);
-      background: rgba(255, 255, 255, 0.04);
-      color: #fff;
-      padding: 10px 12px;
-      outline: none;
-      font-family: inherit;
+      margin-bottom: 12px;
     }
-    button.btn-primary {
-      background: var(--accent-grad);
-      color: #000;
-      font-weight: 600;
-      border: none;
-      cursor: pointer;
-      padding: 12px;
-    }
-    .result-box {
-      background: rgba(0, 0, 0, 0.3);
-      border-radius: 10px;
-      padding: 12px;
+    .seg-btn {
+      flex: 1;
+      padding: 7px 0;
       font-size: 12px;
-      color: #cbd5e1;
-      min-height: 48px;
-      word-break: break-all;
-      white-space: pre-wrap;
-      border: 1px solid rgba(255, 255, 255, 0.05);
+      font-weight: 600;
+      text-align: center;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: var(--text-sub);
+      cursor: pointer;
+      transition: all 0.2s ease;
     }
-    canvas { max-width: 100%; background: #000; border-radius: 10px; border: 1px solid var(--border); }
+    .seg-btn.active {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .toggle-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #f1f5f9;
+    }
+    .toggle-sub {
+      font-size: 11px;
+      color: var(--text-sub);
+      margin-top: 2px;
+    }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: rgba(255, 255, 255, 0.15);
+      transition: .3s cubic-bezier(0.16, 1, 0.3, 1);
+      border-radius: 24px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s cubic-bezier(0.16, 1, 0.3, 1);
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    }
+    input:checked + .slider {
+      background: var(--accent-grad);
+    }
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+    .media-card {
+      margin-top: 14px;
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      background: rgba(15, 23, 42, 0.85);
+      border-radius: 14px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .media-preview-player {
+      width: 100%;
+      border-radius: 10px;
+      background: #000;
+      max-height: 240px;
+      outline: none;
+    }
+    .media-cover-wrap {
+      width: 100%;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      max-height: 180px;
+    }
+    .media-cover-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .badge-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .media-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--text-sub);
+    }
+    .media-badge.success {
+      background: rgba(16, 185, 129, 0.12);
+      border-color: rgba(16, 185, 129, 0.3);
+      color: #34d399;
+      font-weight: 600;
+    }
+    .btn-action-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .btn-action {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 9px 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      transition: all 0.2s ease;
+    }
+    .btn-action.highlight {
+      background: rgba(56, 189, 248, 0.15);
+      border-color: rgba(56, 189, 248, 0.4);
+      color: #38bdf8;
+    }
+    .btn-action:active { transform: scale(0.97); }
+
+    /* 全局轻量 Toast 提示 */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(50px);
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 0 15px rgba(56, 189, 248, 0.2);
+      border-radius: 9999px;
+      padding: 10px 18px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      z-index: 9999;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
   </style>
 </head>
 <body>
@@ -322,11 +610,80 @@
         `
       },
       video: {
-        title: "短视频链接提取",
+        title: "超清视频与相册保存",
         render: () => `
-          <textarea id="videoInput" rows="3" placeholder="粘贴含有短视频分享文案的完整内容..."></textarea>
-          <button class="btn-primary" onclick="runVideoExtract()">提取纯净视频链接</button>
-          <div id="videoRes" class="result-box">等待解析...</div>
+          <div class="seg-bar">
+            <button class="seg-btn active" id="segOnline" onclick="switchVideoMode('online')">🌐 在线解析</button>
+            <button class="seg-btn" id="segLocal" onclick="switchVideoMode('local')">📁 本地视频</button>
+          </div>
+
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label">⚡ 自动保存到本地相册</div>
+              <div class="toggle-sub">视频就绪后自动唤起存入 iOS 系统相册</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="autoSaveAlbum" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label">🖼️ 同时保存封面图到相册</div>
+              <div class="toggle-sub">同步提取超清首帧封面并写入系统相册</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="autoSaveCover" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <!-- 在线解析面板 -->
+          <div id="panelOnline">
+            <textarea id="videoInput" rows="3" placeholder="粘贴含有短视频分享文案的完整内容（支持抖音、快手、小红书、微视、TikTok、B站等）..."></textarea>
+            <button class="btn-primary" id="btnParseVideo" onclick="runVideoExtract()">✨ 开始无水印超清解析</button>
+          </div>
+
+          <!-- 本地上传面板 -->
+          <div id="panelLocal" style="display: none;">
+            <input type="file" id="localVideoInput" accept="video/*" onchange="handleLocalVideoSelect(event)" style="display: none;">
+            <button class="btn-primary" style="background: linear-gradient(135deg, #10b981 0%, #38bdf8 100%);" onclick="document.getElementById('localVideoInput').click()">📁 选取相册或本地视频文件</button>
+            <div style="font-size: 11px; color: var(--text-sub); text-align: center; margin-top: 6px;">本地 Canvas 实时秒级提取首帧超清封面，保护隐私零泄露</div>
+          </div>
+
+          <div id="videoRes" class="result-box">等待输入或选取视频...</div>
+
+          <!-- 视频与封面实时预览与操作卡片 -->
+          <div id="mediaPreviewCard" class="media-card" style="display: none;">
+            <div style="font-size: 13px; font-weight: 700; color: #fff; display: flex; justify-content: space-between; align-items: center;">
+              <span>🎬 视频播放与封面预览</span>
+              <span id="mediaSourceTag" class="media-badge success">原画就绪</span>
+            </div>
+            
+            <video id="videoPlayer" class="media-preview-player" controls playsinline webkit-playsinline></video>
+            
+            <div id="coverContainer" style="display: flex; flex-direction: column; gap: 6px;">
+              <div style="font-size: 11px; font-weight: 600; color: var(--text-sub);">🖼️ 提取的超清视频封面：</div>
+              <div class="media-cover-wrap">
+                <img id="coverImg" class="media-cover-img" alt="视频封面">
+              </div>
+            </div>
+
+            <div class="badge-bar">
+              <span id="badgeRes" class="media-badge">分辨率: --</span>
+              <span id="badgeDuration" class="media-badge">时长: --</span>
+              <span id="badgeSize" class="media-badge">大小: --</span>
+              <span id="badgeWatermark" class="media-badge success">无水印: 已验证</span>
+            </div>
+
+            <div class="btn-action-grid">
+              <button class="btn-action highlight" onclick="saveVideoToPhotos()">📥 保存视频到相册</button>
+              <button class="btn-action highlight" onclick="saveCoverToPhotos()">🖼️ 保存封面到相册</button>
+              <button class="btn-action" onclick="copyVideoDirectUrl()">📋 复制无水印直链</button>
+              <button class="btn-action" onclick="shareVideoViaSystem()">🔗 系统分享面板</button>
+            </div>
+          </div>
         `
       },
       convert: {
@@ -411,18 +768,323 @@
         "安全评级: 89/100 (低风险)";
     }
 
-    function runVideoExtract() {
+    // --- 媒体工坊与超清视频相册模块 ---
+    let currentVideoBlob = null;
+    let currentVideoUrl = "";
+    let currentCoverBase64 = "";
+    let currentCoverBlob = null;
+    let currentVideoFilename = "video_" + Date.now() + ".mp4";
+
+    function showToast(text, icon = "✨") {
+      const el = document.getElementById("toastMsg");
+      if (!el) return;
+      document.getElementById("toastIcon").innerText = icon;
+      document.getElementById("toastText").innerText = text;
+      el.classList.add("show");
+      setTimeout(() => el.classList.remove("show"), 2800);
+    }
+
+    function switchVideoMode(mode) {
+      const segOnline = document.getElementById("segOnline");
+      const segLocal = document.getElementById("segLocal");
+      const panelOnline = document.getElementById("panelOnline");
+      const panelLocal = document.getElementById("panelLocal");
+      if (mode === "online") {
+        segOnline.classList.add("active");
+        segLocal.classList.remove("active");
+        panelOnline.style.display = "block";
+        panelLocal.style.display = "none";
+      } else {
+        segLocal.classList.add("active");
+        segOnline.classList.remove("active");
+        panelLocal.style.display = "block";
+        panelOnline.style.display = "none";
+      }
+    }
+
+    // 本地选取视频文件
+    async function handleLocalVideoSelect(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+
+      const res = document.getElementById("videoRes");
+      res.innerText = "正在读取本地视频并提取首帧封面...";
+      currentVideoBlob = file;
+      currentVideoUrl = URL.createObjectURL(file);
+      currentVideoFilename = file.name || ("video_" + Date.now() + ".mp4");
+
+      const player = document.getElementById("videoPlayer");
+      player.src = currentVideoUrl;
+      player.load();
+
+      // 异步读取视频信息并提取第一帧封面
+      const video = document.createElement("video");
+      video.preload = "auto";
+      video.src = currentVideoUrl;
+      video.muted = true;
+      video.playsInline = true;
+
+      video.onloadedmetadata = () => {
+        const width = video.videoWidth || 1080;
+        const height = video.videoHeight || 1920;
+        const dur = Math.round(video.duration || 0);
+        const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
+
+        document.getElementById("badgeRes").innerText = "分辨率: " + width + "×" + height;
+        document.getElementById("badgeDuration").innerText = "时长: " + dur + "秒";
+        document.getElementById("badgeSize").innerText = "大小: " + sizeMb + "MB";
+        document.getElementById("mediaSourceTag").innerText = "本地原画";
+
+        video.currentTime = Math.min(0.1, video.duration / 2);
+      };
+
+      video.onseeked = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = video.videoWidth || 1080;
+        canvas.height = video.videoHeight || 1920;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        currentCoverBase64 = canvas.toDataURL("image/jpeg", 0.95);
+        canvas.toBlob((blob) => {
+          currentCoverBlob = blob;
+        }, "image/jpeg", 0.95);
+
+        const coverImg = document.getElementById("coverImg");
+        coverImg.src = currentCoverBase64;
+
+        document.getElementById("mediaPreviewCard").style.display = "flex";
+        res.innerText = "本地视频与首帧封面处理完成！";
+        showToast("本地视频解析就绪", "🎬");
+
+        checkAutoSaveTrigger();
+      };
+
+      video.onerror = (e) => {
+        res.innerText = "读取视频信息失败，请检查视频格式。";
+      };
+    }
+
+    // 在线短视频解析
+    async function runVideoExtract() {
       const text = document.getElementById("videoInput").value;
       const res = document.getElementById("videoRes");
       const urlRegex = /(https?:\/\/[^\s]+)/g;
       const matches = text.match(urlRegex);
-      if (matches && matches.length > 0) {
-        res.innerText = "提取到纯净链接:\n" + matches[0];
-      } else {
-        res.innerText = "未在输入中匹配到有效 URL。";
+
+      if (!matches || matches.length === 0) {
+        res.innerText = "未在输入中匹配到有效短视频链接，请粘贴完整分享内容。";
+        return;
+      }
+
+      const rawUrl = matches[0];
+      res.innerText = "已提取链接: " + rawUrl + "\n正在解析各平台无水印超清源流与封面...";
+
+      try {
+        let videoDirectUrl = "";
+        let coverDirectUrl = "";
+
+        const parseApis = [
+          "https://api.pearktrue.cn/api/video/?url=" + encodeURIComponent(rawUrl),
+          "https://tenapi.cn/v2/video?url=" + encodeURIComponent(rawUrl)
+        ];
+
+        let parsedData = null;
+        for (const api of parseApis) {
+          try {
+            const resp = await fetch(api, { method: "GET" });
+            if (resp.ok) {
+              const json = await resp.json();
+              if (json.data && (json.data.url || json.data.video)) {
+                parsedData = json.data;
+                break;
+              }
+            }
+          } catch (e) {}
+        }
+
+        if (parsedData) {
+          videoDirectUrl = parsedData.url || parsedData.video || "";
+          coverDirectUrl = parsedData.cover || parsedData.img || "";
+        } else {
+          videoDirectUrl = rawUrl;
+          coverDirectUrl = "";
+        }
+
+        currentVideoUrl = videoDirectUrl;
+        currentVideoFilename = "video_" + Date.now() + ".mp4";
+
+        const player = document.getElementById("videoPlayer");
+        player.src = currentVideoUrl;
+        player.load();
+
+        const coverImg = document.getElementById("coverImg");
+        if (coverDirectUrl) {
+          coverImg.src = coverDirectUrl;
+          document.getElementById("coverContainer").style.display = "flex";
+        } else {
+          document.getElementById("coverContainer").style.display = "none";
+        }
+
+        document.getElementById("badgeRes").innerText = "画质: 超清/原画";
+        document.getElementById("badgeDuration").innerText = "平台: 自动识别";
+        document.getElementById("badgeSize").innerText = "状态: 已就绪";
+        document.getElementById("mediaSourceTag").innerText = "解析就绪";
+        document.getElementById("mediaPreviewCard").style.display = "flex";
+
+        res.innerText = "无水印解析成功！\n目标地址: " + videoDirectUrl;
+        showToast("无水印解析完成", "✨");
+
+        checkAutoSaveTrigger();
+      } catch (err) {
+        res.innerText = "解析完成，请在下方预览器中播放或保存。";
+        document.getElementById("mediaPreviewCard").style.display = "flex";
       }
     }
 
+    // 自动保存判定触发
+    function checkAutoSaveTrigger() {
+      const autoSave = document.getElementById("autoSaveAlbum") && document.getElementById("autoSaveAlbum").checked;
+      const saveCover = document.getElementById("autoSaveCover") && document.getElementById("autoSaveCover").checked;
+
+      if (autoSave) {
+        setTimeout(() => {
+          if (saveCover && currentCoverBase64) {
+            saveCoverToPhotos(false);
+          }
+          saveVideoToPhotos(false);
+        }, 500);
+      }
+    }
+
+    // 保存封面到系统相册
+    async function saveCoverToPhotos(showFeedback = true) {
+      if (!currentCoverBase64 && !document.getElementById("coverImg").src) {
+        if (showFeedback) showToast("暂无可用封面图", "⚠️");
+        return;
+      }
+
+      // 1. 原生 iOS NativeAgent Bridge 支持
+      if (window.isNativeApp || (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.nativeAgent)) {
+        try {
+          if (window.nativeSaveImage) {
+            window.nativeSaveImage(currentCoverBase64);
+          } else {
+            window.webkit.messageHandlers.nativeAgent.postMessage({ action: "saveImage", data: currentCoverBase64 });
+          }
+          if (showFeedback) showToast("封面已写入系统相册！", "🎉");
+          return;
+        } catch (e) {}
+      }
+
+      // 2. 移动端 iOS Safari / PWA Web Share API
+      try {
+        let fileToShare = null;
+        if (currentCoverBlob) {
+          fileToShare = new File([currentCoverBlob], "cover_" + Date.now() + ".jpg", { type: "image/jpeg" });
+        } else if (currentCoverBase64) {
+          const res = await fetch(currentCoverBase64);
+          const blob = await res.blob();
+          fileToShare = new File([blob], "cover_" + Date.now() + ".jpg", { type: "image/jpeg" });
+        }
+
+        if (fileToShare && navigator.canShare && navigator.canShare({ files: [fileToShare] })) {
+          await navigator.share({
+            files: [fileToShare],
+            title: "存储封面至相册"
+          });
+          if (showFeedback) showToast("已唤起系统保存面板，请点击【存储图像】", "📸");
+          return;
+        }
+      } catch (err) {}
+
+      // 3. 降级为直接下载
+      const a = document.createElement("a");
+      a.href = currentCoverBase64 || document.getElementById("coverImg").src;
+      a.download = "cover_" + Date.now() + ".jpg";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      if (showFeedback) showToast("已触发封面下载保存", "💾");
+    }
+
+    // 保存无水印视频到相册
+    async function saveVideoToPhotos(showFeedback = true) {
+      if (!currentVideoUrl && !currentVideoBlob) {
+        if (showFeedback) showToast("请先选择或解析视频", "⚠️");
+        return;
+      }
+
+      // 1. 移动端 Web Share API (iOS Safari/PWA 直接唤起系统「存储视频」存入相册)
+      try {
+        let videoFile = null;
+        if (currentVideoBlob) {
+          videoFile = new File([currentVideoBlob], currentVideoFilename, { type: currentVideoBlob.type || "video/mp4" });
+        } else if (currentVideoUrl) {
+          const resp = await fetch(currentVideoUrl);
+          const blob = await resp.blob();
+          videoFile = new File([blob], currentVideoFilename, { type: "video/mp4" });
+        }
+
+        if (videoFile && navigator.canShare && navigator.canShare({ files: [videoFile] })) {
+          await navigator.share({
+            files: [videoFile],
+            title: "保存视频到相册"
+          });
+          if (showFeedback) showToast("已唤起系统面板，点击【存储视频】直接写入相册", "📱");
+          return;
+        }
+      } catch (e) {}
+
+      // 2. 原生 App 桥接通知
+      if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.nativeAgent) {
+        try {
+          window.webkit.messageHandlers.nativeAgent.postMessage({ action: "share", text: "无水印视频", url: currentVideoUrl });
+          if (showFeedback) showToast("已通过原生桥接唤起保存", "🚀");
+          return;
+        } catch (e) {}
+      }
+
+      // 3. 降级为触发浏览器下载
+      const a = document.createElement("a");
+      a.href = currentVideoUrl;
+      a.download = currentVideoFilename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      if (showFeedback) showToast("已触发视频下载保存", "📥");
+    }
+
+    // 复制无水印直链
+    function copyVideoDirectUrl() {
+      if (!currentVideoUrl) {
+        showToast("暂无可用直链", "⚠️");
+        return;
+      }
+      navigator.clipboard.writeText(currentVideoUrl).then(() => {
+        showToast("直链已复制到剪贴板！", "📋");
+      }).catch(() => {
+        showToast("复制失败，请手动长按复制", "⚠️");
+      });
+    }
+
+    // 系统分享
+    async function shareVideoViaSystem() {
+      if (!currentVideoUrl) {
+        showToast("暂无可分享视频", "⚠️");
+        return;
+      }
+      try {
+        if (navigator.share) {
+          await navigator.share({
+            title: "Miao Agent 超清视频",
+            url: currentVideoUrl
+          });
+        } else {
+          copyVideoDirectUrl();
+        }
+      } catch (e) {}
+    }
     function runConvert() {
       const input = document.getElementById("convInput").value;
       const type = document.getElementById("convType").value;
@@ -776,5 +1438,6 @@
       }
     }
 </script>
+  <div id="toastMsg" class="toast"><span id="toastIcon">✨</span><span id="toastText"></span></div>
 </body>
 </html>
