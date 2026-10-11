@@ -1,9 +1,6 @@
-# test comment
 name: 自动构建原生应用
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
 
 permissions:
