@@ -35,6 +35,8 @@ jobs:
           mkdir -p App
           cat << 'EOF' > App/NativeAgentApp.swift
           import SwiftUI
+          import WebKit
+          import PhotosUI
 
           @main
           struct NativeAgentApp: App {
@@ -44,109 +46,105 @@ jobs:
                   }
               }
           }
-          EOF
 
-          cat << 'EOF' > App/ContentView.swift
-          import SwiftUI
-          import Photos
+          struct WebView: UIViewRepresentable {
+              let url: URL
 
-          struct ContentView: View {
-              @State private var inputUrl: String = ""
-              @State private var statusMessage: String = "就绪"
-              @State private var isProcessing: Bool = false
-              @State private var selectedTab: Int = 0
-
-              var body: some View {
-                  TabView(selection: $selectedTab) {
-                      NavigationView {
-                          VStack(spacing: 20) {
-                              Text("iOS 智能工作台")
-                                  .font(.largeTitle)
-                                  .bold()
-                                  .padding(.top)
-
-                              VStack(alignment: .leading, spacing: 10) {
-                                  Text("媒体解析与无水印提取")
-                                      .font(.headline)
-                                  TextField("输入平台分享链接...", text: $inputUrl)
-                                      .textFieldStyle(RoundedBorderTextFieldStyle())
-                                      .autocapitalization(.none)
-
-                                  HStack {
-                                      Button(action: {
-                                          processMedia()
-                                      }) {
-                                          Text(isProcessing ? "解析中..." : "解析媒体")
-                                              .bold()
-                                              .frame(maxWidth: .infinity)
-                                              .padding()
-                                              .background(Color.blue)
-                                              .foregroundColor(.white)
-                                              .cornerRadius(10)
-                                      }
-                                      .disabled(isProcessing)
-                                  }
-                              }
-                              .padding()
-                              .background(Color(.systemGray6))
-                              .cornerRadius(12)
-
-                              VStack(alignment: .leading, spacing: 10) {
-                                  Text("原生功能状态")
-                                      .font(.headline)
-                                  Text(statusMessage)
-                                      .font(.subheadline)
-                                      .foregroundColor(.secondary)
-                              }
-                              .padding()
-                              .frame(maxWidth: .infinity, alignment: .leading)
-                              .background(Color(.systemGray6))
-                              .cornerRadius(12)
-
-                              Spacer()
-                          }
-                          .padding()
-                          .navigationTitle("工作台")
-                      }
-                      .tabItem {
-                          Label("解析", systemImage: "arrow.down.circle")
-                      }
-                      .tag(0)
-
-                      NavigationView {
-                          List {
-                              Section(header: Text("文件与格式处理")) {
-                                  Text("文档转换与导出")
-                                  Text("演示文稿转换")
-                                  Text("图片水印处理")
-                              }
-                              Section(header: Text("原生权限支持")) {
-                                  Text("相册读写保存已启用")
-                                  Text("原生系统分享已启用")
-                              }
-                          }
-                          .navigationTitle("工具箱")
-                      }
-                      .tabItem {
-                          Label("工具", systemImage: "wrench.and.screwdriver")
-                      }
-                      .tag(1)
-                  }
+              func makeUIView(context: Context) -> WKWebView {
+                  let config = WKWebViewConfiguration()
+                  config.allowsInlineMediaPlayback = true
+                  let webView = WKWebView(frame: .zero, configuration: config)
+                  return webView
               }
 
-              func processMedia() {
-                  guard !inputUrl.isEmpty else {
-                      statusMessage = "请先输入分享链接"
-                      return
+              func updateUIView(_ uiView: WKWebView, context: Context) {
+                  let request = URLRequest(url: url)
+                  uiView.load(request)
+              }
+          }
+
+          struct ContentView: View {
+              @State private var targetURL = URL(string: "https://frommhy-prog.github.io/iOS-AI-agent/")!
+              @State private var showingShareSheet = false
+              @State private var statusMessage = "就绪"
+
+              var body: some View {
+                  NavigationView {
+                      VStack(spacing: 0) {
+                          WebView(url: targetURL)
+                              .edgesIgnoringSafeArea(.all)
+                          HStack {
+                              Button(action: {
+                                  showingShareSheet = true
+                              }) {
+                                  Label("系统分享", systemImage: "square.and.arrow.up")
+                                      .font(.headline)
+                                      .padding(.vertical, 8)
+                                      .padding(.horizontal, 16)
+                                      .background(Color.blue)
+                                      .foregroundColor(.white)
+                                      .cornerRadius(8)
+                              }
+                              Spacer()
+                              Text(statusMessage)
+                                  .font(.subheadline)
+                                  .foregroundColor(.secondary)
+                          }
+                          .padding()
+                          .background(Color(UIColor.secondarySystemBackground))
+                      }
+                      .navigationBarTitle("iOS 智能工作台", displayMode: .inline)
                   }
-                  isProcessing = true
-                  statusMessage = "正在解析任务..."
-                  DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                      isProcessing = false
-                      statusMessage = "任务已提交处理"
+                  .sheet(isPresented: $showingShareSheet) {
+                      ShareSheet(items: [targetURL])
                   }
               }
           }
+
+          struct ShareSheet: UIViewControllerRepresentable {
+              let items: [Any]
+
+              func makeUIViewController(context: Context) -> UIActivityViewController {
+                  return UIActivityViewController(activityItems: items, applicationActivities: nil)
+              }
+
+              func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+          }
+          EOF
+
+          cat << 'EOF' > App/Info.plist
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleIdentifier</key>
+              <string>com.frommhy.nativeagent</string>
+              <key>CFBundleName</key>
+              <string>NativeAgentApp</string>
+              <key>CFBundleDisplayName</key>
+              <string>AI工作台</string>
+              <key>CFBundlePackageType</key>
+              <string>APPL</string>
+              <key>CFBundleShortVersionString</key>
+              <string>1.0.0</string>
+              <key>CFBundleVersion</key>
+              <string>1</string>
+              <key>LSRequiresIPhoneOS</key>
+              <true/>
+              <key>NSCameraUsageDescription</key>
+              <string>需要访问相机以拍摄与处理图片</string>
+              <key>NSPhotoLibraryAddUsageDescription</key>
+              <string>需要保存处理后的无水印图片与视频到相册</string>
+              <key>NSPhotoLibraryUsageDescription</key>
+              <string>需要读取相册以选择需要转换与处理的媒体文件</string>
+              <key>UILaunchScreen</key>
+              <dict/>
+              <key>UISupportedInterfaceOrientations</key>
+              <array>
+                  <string>UIInterfaceOrientationPortrait</string>
+              </array>
+          </dict>
+          </plist>
           EOF
 
           cat << 'EOF' > project.yml
@@ -154,25 +152,22 @@ jobs:
           options:
             bundleIdPrefix: com.frommhy
             deploymentTarget:
-              iOS: 16.0
+              iOS: "16.0"
+            xcodeVersion: "16.1"
           targets:
             NativeAgentApp:
               type: application
               platform: iOS
-              deploymentTarget: "16.0"
-              sources:
-                - path: App
+              sources: [App]
+              info:
+                path: App/Info.plist
               settings:
                 base:
-                  PRODUCT_BUNDLE_IDENTIFIER: com.frommhy.NativeAgentApp
-                  GENERATE_INFOPLIST_FILE: YES
-                  INFOPLIST_KEY_CFBundleDisplayName: 原生工作台
-                  INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription: 用于将处理后的无水印图片和视频保存到系统相册
-                  INFOPLIST_KEY_NSPhotoLibraryUsageDescription: 用于访问与保存媒体文件
+                  PRODUCT_BUNDLE_IDENTIFIER: com.frommhy.nativeagent
+                  INFOPLIST_FILE: App/Info.plist
                   CODE_SIGNING_ALLOWED: NO
-                  CODE_SIGNING_REQUIRED: NO
                   CODE_SIGN_IDENTITY: ""
-                  AD_HOC_CODE_SIGNING_ALLOWED: YES
+                  CODE_SIGNING_REQUIRED: NO
           EOF
 
           xcodegen generate
@@ -183,40 +178,33 @@ jobs:
             -project NativeAgentApp.xcodeproj \
             -scheme NativeAgentApp \
             -configuration Release \
-            -destination 'generic/platform=iOS' \
-            -derivedDataPath ./build \
+            -destination "generic/platform=iOS" \
             CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
-            AD_HOC_CODE_SIGNING_ALLOWED=YES
+            CODE_SIGNING_REQUIRED=NO \
+            CONFIGURATION_BUILD_DIR=build/Release-iphoneos
 
-          APP_DIR=$(find ./build -name "NativeAgentApp.app" -type d | head -n 1)
-          if [ -z "$APP_DIR" ]; then
-            echo "未找到编译生成的 NativeAgentApp.app 目录"
-            exit 1
-          fi
-
-          echo "找到应用目录: $APP_DIR"
-          rm -rf Payload NativeAgentApp.ipa
           mkdir -p Payload
-          cp -R "$APP_DIR" Payload/
-          zip -qr NativeAgentApp.ipa Payload
-
-          echo "IPA 文件打包完成:"
-          ls -lh NativeAgentApp.ipa
+          cp -r build/Release-iphoneos/NativeAgentApp.app Payload/
+          zip -r NativeAgentApp.ipa Payload
+          ls -la NativeAgentApp.ipa
 
       - name: 上传构建产物至 Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: NativeAgentApp-IPA
           path: NativeAgentApp.ipa
-          if-no-files-found: error
 
       - name: 发布至 GitHub Release 并提供公网下载链接
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create v1.0.0 NativeAgentApp.ipa \
-            --title "iOS 原生工作台 v1.0.0" \
-            --notes "未签名原生应用安装包，支持副店助手导入自签" \
-            --clobber || gh release upload v1.0.0 NativeAgentApp.ipa --clobber
+          if gh release view v1.0.0 >/dev/null 2>&1; then
+            echo "Release v1.0.0 已存在，上传更新产物..."
+            gh release upload v1.0.0 NativeAgentApp.ipa --clobber
+          else
+            echo "创建 Release v1.0.0 并上传产物..."
+            gh release create v1.0.0 NativeAgentApp.ipa \
+              --title "iOS 原生工作台 v1.0.0" \
+              --notes "未签名原生应用安装包，支持副店助手导入自签"
+          fi
