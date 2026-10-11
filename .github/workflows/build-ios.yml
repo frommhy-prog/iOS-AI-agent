@@ -176,10 +176,10 @@ jobs:
 
           xcodegen generate
 
-          sed -i '' -E 's/objectVersion = [0-9]+;/objectVersion = 56;/g' NativeAgentApp.xcodeproj/project.pbxproj || true
-          sed -i '' -E 's/compatibilityVersion = "[^"]+";/compatibilityVersion = "Xcode 14.0";/g' NativeAgentApp.xcodeproj/project.pbxproj || true
-          python3 -c 'import re; p="NativeAgentApp.xcodeproj/project.pbxproj"; s=open(p).read(); s=re.sub(r"objectVersion = \\d+;", "objectVersion = 56;", s); s=re.sub(r"compatibilityVersion = \\"[^\\"]+\\";", "compatibilityVersion = \\"Xcode 14.0\\";", s); open(p,"w").write(s); print("工程版本修补完成")'
-          grep "objectVersion" NativeAgentApp.xcodeproj/project.pbxproj
+          sed -i '' 's/objectVersion = 77;/objectVersion = 56;/g' NativeAgentApp.xcodeproj/project.pbxproj || true
+          sed -i '' 's/Xcode 16.0/Xcode 14.0/g' NativeAgentApp.xcodeproj/project.pbxproj || true
+          python3 -c 'p="NativeAgentApp.xcodeproj/project.pbxproj"; open(p,"w").write(open(p).read().replace("objectVersion = 77;", "objectVersion = 56;").replace("Xcode 16.0", "Xcode 14.0"))'
+          head -n 12 NativeAgentApp.xcodeproj/project.pbxproj
 
       - name: 编译原生应用与打包 IPA
         run: |
