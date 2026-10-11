@@ -1,3 +1,4 @@
+# test comment
 name: 自动构建原生应用
 
 on:
@@ -81,11 +82,17 @@ jobs:
                           }
                           .tag(3)
                       
+                      ScriptRunnerTab()
+                          .tabItem {
+                              Label("脚本自动化", systemImage: "terminal.fill")
+                          }
+                          .tag(4)
+                      
                       SystemToolsTab()
                           .tabItem {
                               Label("系统工具", systemImage: "gearshape")
                           }
-                          .tag(4)
+                          .tag(5)
                   }
               }
           }
@@ -587,6 +594,239 @@ jobs:
               }
           }
 
+          struct ScriptRunnerTab: View {
+              @State private var scriptType = 0
+              @State private var token = ""
+              @State private var intervalMinutes = "240"
+              @State private var autoGroupClaim = true
+              @State private var isRunning = false
+              @State private var logs = "=== 脚本自动化引擎就绪 ===\n支持定时调度、网络请求与控制台日志。\n"
+              @State private var remainingSeconds = 0
+              @State private var countdownTimer: Timer? = nil
+
+              var body: some View {
+                  NavigationStack {
+                      ScrollView {
+                          VStack(spacing: 16) {
+                              VStack(alignment: .leading, spacing: 12) {
+                                  Text("脚本选择与配置")
+                                      .font(.headline)
+                                  
+                                  Picker("脚本类型", selection: $scriptType) {
+                                      Text("Interlink Network 自动挖矿").tag(0)
+                                      Text("自定义 HTTP 巡检脚本").tag(1)
+                                  }
+                                  .pickerStyle(.segmented)
+                                  
+                                  VStack(alignment: .leading, spacing: 6) {
+                                      Text("认证令牌 (Bearer Token):")
+                                          .font(.subheadline)
+                                          .foregroundColor(.secondary)
+                                      SecureField("输入 Interlink Access Token", text: $token)
+                                          .textFieldStyle(RoundedBorderTextFieldStyle())
+                                          .autocorrectionDisabled()
+                                          .textInputAutocapitalization(.never)
+                                  }
+                                  
+                                  HStack {
+                                      VStack(alignment: .leading, spacing: 6) {
+                                          Text("执行周期 (分钟):")
+                                              .font(.subheadline)
+                                              .foregroundColor(.secondary)
+                                          TextField("240", text: $intervalMinutes)
+                                              .textFieldStyle(RoundedBorderTextFieldStyle())
+                                              .keyboardType(.numberPad)
+                                      }
+                                      
+                                      Toggle("组队领取", isOn: $autoGroupClaim)
+                                          .padding(.top, 16)
+                                  }
+                              }
+                              .padding()
+                              .background(Color(.secondarySystemBackground))
+                              .cornerRadius(12)
+                              
+                              HStack(spacing: 12) {
+                                  Button {
+                                      Task {
+                                          await runScriptOnce()
+                                      }
+                                  } label: {
+                                      HStack {
+                                          Image(systemName: "play.circle.fill")
+                                          Text("立即执行一次")
+                                      }
+                                      .frame(maxWidth: .infinity)
+                                      .padding()
+                                      .background(Color.blue)
+                                      .foregroundColor(.white)
+                                      .cornerRadius(10)
+                                  }
+                                  .disabled(isRunning)
+                                  
+                                  Button {
+                                      if isRunning {
+                                          stopPeriodicExecution()
+                                      } else {
+                                          startPeriodicExecution()
+                                      }
+                                  } label: {
+                                      HStack {
+                                          Image(systemName: isRunning ? "stop.circle.fill" : "repeat.circle.fill")
+                                          Text(isRunning ? "停止循环" : "启动周期运行")
+                                      }
+                                      .frame(maxWidth: .infinity)
+                                      .padding()
+                                      .background(isRunning ? Color.red : Color.green)
+                                      .foregroundColor(.white)
+                                      .cornerRadius(10)
+                                  }
+                              }
+                              
+                              if isRunning && remainingSeconds > 0 {
+                                  HStack {
+                                      Image(systemName: "clock.arrow.circlepath")
+                                      Text("距离下次执行: \(remainingSeconds / 60)分\(remainingSeconds % 60)秒")
+                                          .font(.subheadline)
+                                          .foregroundColor(.blue)
+                                  }
+                                  .padding(.vertical, 4)
+                              }
+                              
+                              VStack(alignment: .leading, spacing: 8) {
+                                  HStack {
+                                      Text("终端运行日志")
+                                          .font(.headline)
+                                      Spacer()
+                                      Button("清空") {
+                                          logs = ""
+                                      }
+                                      .font(.caption)
+                                      Button("复制") {
+                                          UIPasteboard.general.string = logs
+                                      }
+                                      .font(.caption)
+                                  }
+                                  
+                                  ScrollView {
+                                      Text(logs.isEmpty ? "暂无日志" : logs)
+                                          .font(.system(size: 11, design: .monospaced))
+                                          .foregroundColor(.green)
+                                          .frame(maxWidth: .infinity, alignment: .leading)
+                                          .padding(8)
+                                  }
+                                  .frame(height: 220)
+                                  .background(Color.black)
+                                  .cornerRadius(8)
+                              }
+                              .padding()
+                              .background(Color(.secondarySystemBackground))
+                              .cornerRadius(12)
+                          }
+                          .padding()
+                      }
+                      .navigationTitle("脚本自动化")
+                  }
+              }
+              
+              private func appendLog(_ message: String) {
+                  let formatter = DateFormatter()
+                  formatter.dateFormat = "HH:mm:ss"
+                  let timestamp = formatter.string(from: Date())
+                  logs += "[\(timestamp)] \(message)\n"
+              }
+              
+              private func runScriptOnce() async {
+                  let cleanToken = token.trimmingCharacters(in: .whitespacesAndNewlines)
+                  if cleanToken.isEmpty {
+                      appendLog("错误: 认证令牌不能为空，请输入 Interlink Token。")
+                      return
+                  }
+                  
+                  appendLog("开始执行 Interlink Network 自动化流程...")
+                  
+                  // 1. 请求单人 4 小时挖矿奖励
+                  await executeClaim(endpoint: "https://prod.interlinklabs.ai/api/v1/token/claim-airdrop", name: "个人挖矿奖励", token: cleanToken)
+                  
+                  // 2. 如果开启组队挖矿，请求组队收益
+                  if autoGroupClaim {
+                      try? await Task.sleep(nanoseconds: 2_000_000_000)
+                      await executeClaim(endpoint: "https://prod.interlinklabs.ai/api/v1/mining/group-claim", name: "组队挖矿收益", token: cleanToken)
+                  }
+                  
+                  appendLog("当前轮次执行完毕。")
+              }
+              
+              private func executeClaim(endpoint: String, name: String, token: String) async {
+                  guard let url = URL(string: endpoint) else {
+                      appendLog("无效请求地址: \(endpoint)")
+                      return
+                  }
+                  
+                  var request = URLRequest(url: url)
+                  request.httpMethod = "POST"
+                  request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+                  request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                  request.setValue("InterLink/4.0.5 (iOS; iPhone; Scale/3.00)", forHTTPHeaderField: "User-Agent")
+                  request.httpBody = "{}".data(using: .utf8)
+                  
+                  appendLog("正在发送 [\(name)] 请求...")
+                  do {
+                      let (data, response) = try await URLSession.shared.data(for: request)
+                      if let httpResponse = response as? HTTPURLResponse {
+                          let status = httpResponse.statusCode
+                          let respString = String(data: data, encoding: .utf8) ?? "空响应"
+                          if status == 200 {
+                              appendLog("[\(name)] 成功 (状态码 200): \(respString.prefix(100))")
+                          } else {
+                              appendLog("[\(name)] 响应状态码: \(status), 内容: \(respString.prefix(120))")
+                          }
+                      }
+                  } catch {
+                      appendLog("[\(name)] 请求异常: \(error.localizedDescription)")
+                  }
+              }
+              
+              private func startPeriodicExecution() {
+                  let cleanToken = token.trimmingCharacters(in: .whitespacesAndNewlines)
+                  if cleanToken.isEmpty {
+                      appendLog("错误: 请先输入认证令牌再启动循环。")
+                      return
+                  }
+                  
+                  let mins = Int(intervalMinutes) ?? 240
+                  let intervalSec = max(mins * 60, 60)
+                  
+                  isRunning = true
+                  appendLog("已启动周期定时器，设定周期: \(mins) 分钟 (\(intervalSec) 秒)。")
+                  
+                  Task {
+                      await runScriptOnce()
+                  }
+                  
+                  remainingSeconds = intervalSec
+                  countdownTimer?.invalidate()
+                  countdownTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+                      if remainingSeconds > 0 {
+                          remainingSeconds -= 1
+                      } else {
+                          remainingSeconds = intervalSec
+                          Task {
+                              await runScriptOnce()
+                          }
+                      }
+                  }
+              }
+              
+              private func stopPeriodicExecution() {
+                  isRunning = false
+                  countdownTimer?.invalidate()
+                  countdownTimer = nil
+                  remainingSeconds = 0
+                  appendLog("已停止周期执行。")
+              }
+          }
+
           struct SystemToolsTab: View {
               @State private var photoAuthStatus = "检测中"
               @State private var cameraAuthStatus = "检测中"
@@ -793,12 +1033,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if gh release view v1.1.0 >/dev/null 2>&1; then
-            echo "Release v1.1.0 已存在，上传更新产物..."
-            gh release upload v1.1.0 NativeAgentApp.ipa --clobber
+          if gh release view v1.2.0 >/dev/null 2>&1; then
+            echo "Release v1.2.0 已存在，上传更新产物..."
+            gh release upload v1.2.0 NativeAgentApp.ipa --clobber
           else
-            echo "创建 Release v1.1.0 并上传产物..."
-            gh release create v1.1.0 NativeAgentApp.ipa \
-              --title "iOS 原生工作台 v1.1.0 (全功能版)" \
+            echo "创建 Release v1.2.0 并上传产物..."
+            gh release create v1.2.0 NativeAgentApp.ipa \
+              --title "iOS 原生工作台 v1.2.0 (全功能版)" \
               --notes "升级多标签原生架构：无水印视频与封面提取存相册、图片格式与无损压缩、Markdown演示文稿转PDF、系统文档保存与原生JSBridge"
           fi
