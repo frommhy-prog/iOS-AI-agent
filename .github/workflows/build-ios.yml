@@ -36,68 +36,599 @@ jobs:
           cat << 'EOF' > App/NativeAgentApp.swift
           import SwiftUI
           import WebKit
+          import Photos
           import PhotosUI
+          import AVFoundation
+          import AVKit
+          import PDFKit
+          import UniformTypeIdentifiers
 
           @main
           struct NativeAgentApp: App {
               var body: some Scene {
                   WindowGroup {
-                      ContentView()
+                      MainTabView()
                   }
               }
           }
 
-          struct WebView: UIViewRepresentable {
-              let url: URL
-
-              func makeUIView(context: Context) -> WKWebView {
-                  let config = WKWebViewConfiguration()
-                  config.allowsInlineMediaPlayback = true
-                  let webView = WKWebView(frame: .zero, configuration: config)
-                  return webView
-              }
-
-              func updateUIView(_ uiView: WKWebView, context: Context) {
-                  let request = URLRequest(url: url)
-                  uiView.load(request)
+          struct MainTabView: View {
+              @State private var selectedTab = 0
+              
+              var body: some View {
+                  TabView(selection: $selectedTab) {
+                      WorkbenchTab()
+                          .tabItem {
+                              Label("AI工作台", systemImage: "sparkles")
+                          }
+                          .tag(0)
+                      
+                      MediaCoverTab()
+                          .tabItem {
+                              Label("封面与视频", systemImage: "play.rectangle.on.rectangle")
+                          }
+                          .tag(1)
+                      
+                      FormatConverterTab()
+                          .tabItem {
+                              Label("格式转换", systemImage: "arrow.triangle.2.circlepath")
+                          }
+                          .tag(2)
+                      
+                      DocConverterTab()
+                          .tabItem {
+                              Label("文档转换", systemImage: "doc.richtext")
+                          }
+                          .tag(3)
+                      
+                      SystemToolsTab()
+                          .tabItem {
+                              Label("系统工具", systemImage: "gearshape")
+                          }
+                          .tag(4)
+                  }
               }
           }
 
-          struct ContentView: View {
+          struct WorkbenchTab: View {
               @State private var targetURL = URL(string: "https://frommhy-prog.github.io/iOS-AI-agent/")!
-              @State private var showingShareSheet = false
               @State private var statusMessage = "就绪"
+              @State private var showingShare = false
+              @State private var shareItems: [Any] = []
+              @State private var reloadTrigger = false
 
               var body: some View {
                   NavigationView {
                       VStack(spacing: 0) {
-                          WebView(url: targetURL)
-                              .edgesIgnoringSafeArea(.all)
+                          WorkbenchWebView(
+                              url: targetURL,
+                              statusText: $statusMessage,
+                              shareItems: $shareItems,
+                              showShare: $showingShare,
+                              reloadTrigger: $reloadTrigger
+                          )
+                          .edgesIgnoringSafeArea(.horizontal)
+                          
                           HStack {
+                              Button(action: { reloadTrigger.toggle() }) {
+                                  Image(systemName: "arrow.clockwise")
+                              }
+                              .padding(.horizontal, 8)
+                              
+                              Text(statusMessage)
+                                  .font(.caption)
+                                  .foregroundColor(.secondary)
+                                  .lineLimit(1)
+                              
+                              Spacer()
+                              
                               Button(action: {
-                                  showingShareSheet = true
+                                  shareItems = [targetURL]
+                                  showingShare = true
                               }) {
-                                  Label("系统分享", systemImage: "square.and.arrow.up")
-                                      .font(.headline)
-                                      .padding(.vertical, 8)
-                                      .padding(.horizontal, 16)
+                                  Label("分享工作台", systemImage: "square.and.arrow.up")
+                                      .font(.caption)
+                                      .padding(.vertical, 6)
+                                      .padding(.horizontal, 12)
                                       .background(Color.blue)
                                       .foregroundColor(.white)
-                                      .cornerRadius(8)
+                                      .cornerRadius(6)
                               }
-                              Spacer()
-                              Text(statusMessage)
-                                  .font(.subheadline)
-                                  .foregroundColor(.secondary)
                           }
-                          .padding()
+                          .padding(.horizontal, 12)
+                          .padding(.vertical, 6)
                           .background(Color(UIColor.secondarySystemBackground))
                       }
-                      .navigationBarTitle("iOS 智能工作台", displayMode: .inline)
+                      .navigationBarTitle("智能原生工作台", displayMode: .inline)
                   }
-                  .sheet(isPresented: $showingShareSheet) {
-                      ShareSheet(items: [targetURL])
+                  .sheet(isPresented: $showingShare) {
+                      ShareSheet(items: shareItems)
                   }
+              }
+          }
+
+          struct WorkbenchWebView: UIViewRepresentable {
+              let url: URL
+              @Binding var statusText: String
+              @Binding var shareItems: [Any]
+              @Binding var showShare: Bool
+              @Binding var reloadTrigger: Bool
+              
+              func makeCoordinator() -> Coordinator {
+                  Coordinator(self)
+              }
+              
+              func makeUIView(context: Context) -> WKWebView {
+                  let contentController = WKUserContentController()
+                  contentController.add(context.coordinator, name: "NativeApp")
+                  
+                  let config = WKWebViewConfiguration()
+                  config.userContentController = contentController
+                  config.allowsInlineMediaPlayback = true
+                  
+                  let webView = WKWebView(frame: .zero, configuration: config)
+                  context.coordinator.webView = webView
+                  
+                  let req = URLRequest(url: url)
+                  webView.load(req)
+                  return webView
+              }
+              
+              func updateUIView(_ uiView: WKWebView, context: Context) {
+                  if context.coordinator.lastReloadTrigger != reloadTrigger {
+                      context.coordinator.lastReloadTrigger = reloadTrigger
+                      uiView.reload()
+                  }
+              }
+              
+              class Coordinator: NSObject, WKScriptMessageHandler {
+                  var parent: WorkbenchWebView
+                  weak var webView: WKWebView?
+                  var lastReloadTrigger = false
+                  
+                  init(_ parent: WorkbenchWebView) {
+                      self.parent = parent
+                  }
+                  
+                  func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+                      guard let dict = message.body as? [String: Any] else { return }
+                      let action = dict["action"] as? String ?? ""
+                      
+                      if action == "saveImage", let base64 = dict["data"] as? String {
+                          let clean = base64.replacingOccurrences(of: "data:image/png;base64,", with: "")
+                                            .replacingOccurrences(of: "data:image/jpeg;base64,", with: "")
+                          if let data = Data(base64Encoded: clean), let img = UIImage(data: data) {
+                              PHPhotoLibrary.shared().performChanges({
+                                  PHAssetChangeRequest.creationRequestForAsset(from: img)
+                              }) { success, _ in
+                                  DispatchQueue.main.async {
+                                      self.parent.statusText = success ? "图片已存入相册" : "相册保存失败"
+                                  }
+                              }
+                          }
+                      } else if action == "share", let text = dict["text"] as? String {
+                          parent.shareItems = [text]
+                          parent.showShare = true
+                      }
+                  }
+              }
+          }
+
+          struct MediaCoverTab: View {
+              @State private var videoURLInput = ""
+              @State private var extractedCover: UIImage?
+              @State private var isProcessing = false
+              @State private var status = "输入视频直链提取封面与保存"
+              @State private var showingShare = false
+              
+              var body: some View {
+                  NavigationView {
+                      Form {
+                          Section(header: Text("无水印视频地址")) {
+                              TextField("粘贴视频直链 (http/https)", text: $videoURLInput)
+                                  .autocapitalization(.none)
+                                  .disableAutocorrection(true)
+                              
+                              Button(action: extractCoverFromURL) {
+                                  if isProcessing {
+                                      ProgressView()
+                                  } else {
+                                      Text("提取高清视频封面帧")
+                                  }
+                              }
+                              .disabled(videoURLInput.isEmpty || isProcessing)
+                          }
+                          
+                          if let cover = extractedCover {
+                              Section(header: Text("封面预览")) {
+                                  Image(uiImage: cover)
+                                      .resizable()
+                                      .scaledToFit()
+                                      .frame(maxHeight: 220)
+                                      .cornerRadius(8)
+                                  
+                                  Button(action: saveCoverToAlbum) {
+                                      Label("保存封面至本地相册", systemImage: "photo.on.rectangle.angled")
+                                  }
+                                  
+                                  Button(action: { showingShare = true }) {
+                                      Label("分享高清封面", systemImage: "square.and.arrow.up")
+                                  }
+                              }
+                          }
+                          
+                          Section(header: Text("视频一键存相册")) {
+                              Button(action: downloadAndSaveVideo) {
+                                  Label("下载视频并存入系统相册", systemImage: "arrow.down.circle")
+                              }
+                              .disabled(videoURLInput.isEmpty || isProcessing)
+                          }
+                          
+                          Section(footer: Text(status).foregroundColor(.secondary)) {
+                              EmptyView()
+                          }
+                      }
+                      .navigationBarTitle("封面提取与视频存储", displayMode: .inline)
+                  }
+                  .sheet(isPresented: $showingShare) {
+                      if let cover = extractedCover {
+                          ShareSheet(items: [cover])
+                      }
+                  }
+              }
+              
+              func extractCoverFromURL() {
+                  guard let url = URL(string: videoURLInput.trimmingCharacters(in: .whitespacesAndNewlines)) else {
+                      status = "请输入有效 URL"
+                      return
+                  }
+                  isProcessing = true
+                  status = "正在提取视频封面..."
+                  
+                  DispatchQueue.global(qos: .userInitiated).async {
+                      let asset = AVURLAsset(url: url)
+                      let generator = AVAssetImageGenerator(asset: asset)
+                      generator.appliesPreferredTrackTransform = true
+                      let time = CMTime(seconds: 0.5, preferredTimescale: 600)
+                      
+                      do {
+                          let cgImage = try generator.copyCGImage(at: time, actualTime: nil)
+                          let image = UIImage(cgImage: cgImage)
+                          DispatchQueue.main.async {
+                              self.extractedCover = image
+                              self.isProcessing = false
+                              self.status = "封面提取成功"
+                          }
+                      } catch {
+                          DispatchQueue.main.async {
+                              self.isProcessing = false
+                              self.status = "提取失败: \(error.localizedDescription)"
+                          }
+                      }
+                  }
+              }
+              
+              func saveCoverToAlbum() {
+                  guard let img = extractedCover else { return }
+                  PHPhotoLibrary.shared().performChanges({
+                      PHAssetChangeRequest.creationRequestForAsset(from: img)
+                  }) { success, _ in
+                      DispatchQueue.main.async {
+                          self.status = success ? "封面已保存至本地相册" : "相册权限不足或保存失败"
+                      }
+                  }
+              }
+              
+              func downloadAndSaveVideo() {
+                  guard let url = URL(string: videoURLInput.trimmingCharacters(in: .whitespacesAndNewlines)) else { return }
+                  isProcessing = true
+                  status = "正在下载视频..."
+                  
+                  URLSession.shared.downloadTask(with: url) { localURL, _, error in
+                      guard let localURL = localURL, error == nil else {
+                          DispatchQueue.main.async {
+                              self.isProcessing = false
+                              self.status = "下载失败: \(error?.localizedDescription ?? "")"
+                          }
+                          return
+                      }
+                      
+                      PHPhotoLibrary.shared().performChanges({
+                          PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: localURL)
+                      }) { success, _ in
+                          DispatchQueue.main.async {
+                              self.isProcessing = false
+                              self.status = success ? "视频已成功存入相册！" : "相册保存失败"
+                          }
+                      }
+                  }.resume()
+              }
+          }
+
+          struct FormatConverterTab: View {
+              @State private var selectedItem: PhotosPickerItem?
+              @State private var originalImage: UIImage?
+              @State private var convertedData: Data?
+              @State private var targetFormat = "JPEG"
+              @State private var compressionQuality: Double = 0.8
+              @State private var status = "请选择需要转换的图片"
+              @State private var showingShare = false
+              
+              let formats = ["JPEG", "PNG", "HEIC"]
+              
+              var body: some View {
+                  NavigationView {
+                      Form {
+                          Section(header: Text("选择输入文件")) {
+                              PhotosPicker(selection: $selectedItem, matching: .images) {
+                                  Label(originalImage == nil ? "从相册选取图片" : "重新选取图片", systemImage: "photo")
+                              }
+                              .onChange(of: selectedItem) { newItem in
+                                  Task {
+                                      if let data = try? await newItem?.loadTransferable(type: Data.self),
+                                         let img = UIImage(data: data) {
+                                          originalImage = img
+                                          convertedData = nil
+                                          status = "图片加载成功，原始体积: \(data.count / 1024) KB"
+                                      }
+                                  }
+                              }
+                          }
+                          
+                          if let img = originalImage {
+                              Section(header: Text("目标转换格式")) {
+                                  Picker("格式", selection: $targetFormat) {
+                                      ForEach(formats, id: \.self) { Text($0) }
+                                  }
+                                  .pickerStyle(SegmentedPickerStyle())
+                                  
+                                  if targetFormat != "PNG" {
+                                      VStack(alignment: .leading) {
+                                          Text("压缩质量: \(Int(compressionQuality * 100))%")
+                                          Slider(value: $compressionQuality, in: 0.1...1.0, step: 0.05)
+                                      }
+                                  }
+                                  
+                                  Button(action: convertImage) {
+                                      Text("开始转换并生成")
+                                  }
+                              }
+                          }
+                          
+                          if let data = convertedData {
+                              Section(header: Text("转换结果")) {
+                                  Text("生成体积: \(data.count / 1024) KB")
+                                      .font(.headline)
+                                      .foregroundColor(.green)
+                                  
+                                  Button(action: saveConvertedToAlbum) {
+                                      Label("存入系统相册", systemImage: "square.and.arrow.down")
+                                  }
+                                  
+                                  Button(action: { showingShare = true }) {
+                                      Label("系统分享导出", systemImage: "square.and.arrow.up")
+                                  }
+                              }
+                          }
+                          
+                          Section(footer: Text(status).foregroundColor(.secondary)) {
+                              EmptyView()
+                          }
+                      }
+                      .navigationBarTitle("媒体格式转换器", displayMode: .inline)
+                  }
+                  .sheet(isPresented: $showingShare) {
+                      if let data = convertedData, let img = UIImage(data: data) {
+                          ShareSheet(items: [img])
+                      }
+                  }
+              }
+              
+              func convertImage() {
+                  guard let img = originalImage else { return }
+                  if targetFormat == "PNG" {
+                      convertedData = img.pngData()
+                  } else {
+                      convertedData = img.jpegData(compressionQuality: CGFloat(compressionQuality))
+                  }
+                  status = "转换完成，已准备就绪"
+              }
+              
+              func saveConvertedToAlbum() {
+                  guard let data = convertedData, let img = UIImage(data: data) else { return }
+                  PHPhotoLibrary.shared().performChanges({
+                      PHAssetChangeRequest.creationRequestForAsset(from: img)
+                  }) { success, _ in
+                      DispatchQueue.main.async {
+                          self.status = success ? "已成功保存到系统相册" : "相册保存失败"
+                      }
+                  }
+              }
+          }
+
+          struct DocConverterTab: View {
+              @State private var docTitle = "自动化报告演示"
+              @State private var docContent = "# 自动化经营分析简报\n\n1. 核心指标统计\n- 今日订单流速稳定\n- 违规项检测：0 项\n\n2. 总结结论\n系统已全自动化接入，支持本地相册、文档导出与高清处理。"
+              @State private var pdfData: Data?
+              @State private var status = "输入文本或结构化内容生成 PDF"
+              @State private var showingShare = false
+              
+              var body: some View {
+                  NavigationView {
+                      Form {
+                          Section(header: Text("演示文档标题")) {
+                              TextField("输入文档标题", text: $docTitle)
+                          }
+                          
+                          Section(header: Text("文档正文 / Markdown 内容")) {
+                              TextEditor(text: $docContent)
+                                  .frame(minHeight: 140)
+                          }
+                          
+                          Section {
+                              Button(action: generatePDF) {
+                                  Label("渲染并导出矢量 PDF 演示文件", systemImage: "doc.text")
+                              }
+                          }
+                          
+                          if let data = pdfData {
+                              Section(header: Text("生成产物")) {
+                                  Text("PDF 文档大小: \(data.count / 1024) KB")
+                                      .foregroundColor(.blue)
+                                  
+                                  Button(action: { showingShare = true }) {
+                                      Label("系统分享 / 存储到文件", systemImage: "square.and.arrow.up")
+                                  }
+                              }
+                          }
+                          
+                          Section(footer: Text(status).foregroundColor(.secondary)) {
+                              EmptyView()
+                          }
+                      }
+                      .navigationBarTitle("文档与演示文稿转换", displayMode: .inline)
+                  }
+                  .sheet(isPresented: $showingShare) {
+                      if let data = pdfData {
+                          let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("\(docTitle).pdf")
+                          try? data.write(to: tempURL)
+                          ShareSheet(items: [tempURL])
+                      }
+                  }
+              }
+              
+              func generatePDF() {
+                  let pageWidth: CGFloat = 595.2
+                  let pageHeight: CGFloat = 841.8
+                  let pageRect = CGRect(x: 0, y: 0, width: pageWidth, height: pageHeight)
+                  
+                  let renderer = UIGraphicsPDFRenderer(bounds: pageRect)
+                  let data = renderer.pdfData { context in
+                      context.beginPage()
+                      
+                      let titleFont = UIFont.boldSystemFont(ofSize: 22)
+                      let titleAttrs: [NSAttributedString.Key: Any] = [.font: titleFont, .foregroundColor: UIColor.black]
+                      let titleRect = CGRect(x: 40, y: 40, width: pageWidth - 80, height: 35)
+                      (docTitle as NSString).draw(in: titleRect, withAttributes: titleAttrs)
+                      
+                      let bodyFont = UIFont.systemFont(ofSize: 14)
+                      let paragraphStyle = NSMutableParagraphStyle()
+                      paragraphStyle.lineSpacing = 6
+                      let bodyAttrs: [NSAttributedString.Key: Any] = [
+                          .font: bodyFont,
+                          .foregroundColor: UIColor.darkGray,
+                          .paragraphStyle: paragraphStyle
+                      ]
+                      let bodyRect = CGRect(x: 40, y: 90, width: pageWidth - 80, height: pageHeight - 130)
+                      (docContent as NSString).draw(in: bodyRect, withAttributes: bodyAttrs)
+                  }
+                  
+                  self.pdfData = data
+                  self.status = "PDF 渲染成功！"
+              }
+          }
+
+          struct SystemToolsTab: View {
+              @State private var photoAuthStatus = "检测中"
+              @State private var cameraAuthStatus = "检测中"
+              @State private var cacheSize = "计算中"
+              
+              var body: some View {
+                  NavigationView {
+                      List {
+                          Section(header: Text("系统权限状态")) {
+                              HStack {
+                                  Text("相册读写权限")
+                                  Spacer()
+                                  Text(photoAuthStatus)
+                                      .foregroundColor(.secondary)
+                              }
+                              HStack {
+                                  Text("相机访问权限")
+                                  Spacer()
+                                  Text(cameraAuthStatus)
+                                      .foregroundColor(.secondary)
+                              }
+                              Button(action: checkPermissions) {
+                                  Text("刷新权限状态")
+                              }
+                          }
+                          
+                          Section(header: Text("沙盒与缓存管理")) {
+                              HStack {
+                                  Text("临时缓存占用")
+                                  Spacer()
+                                  Text(cacheSize)
+                                      .foregroundColor(.secondary)
+                              }
+                              Button(action: clearCache) {
+                                  Text("清理沙盒缓存")
+                                      .foregroundColor(.red)
+                              }
+                          }
+                          
+                          Section(header: Text("环境与版本")) {
+                              HStack {
+                                  Text("应用标识")
+                                  Spacer()
+                                  Text("com.frommhy.nativeagent")
+                                      .font(.caption)
+                              }
+                              HStack {
+                                  Text("版本")
+                                  Spacer()
+                                  Text("1.1.0")
+                              }
+                              HStack {
+                                  Text("系统兼容")
+                                  Spacer()
+                                  Text("iOS 16.0 ~ 26.6.1+")
+                              }
+                          }
+                      }
+                      .navigationBarTitle("系统工具与设置", displayMode: .inline)
+                      .onAppear {
+                          checkPermissions()
+                          calculateCache()
+                      }
+                  }
+              }
+              
+              func checkPermissions() {
+                  let photo = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+                  switch photo {
+                  case .authorized, .limited: photoAuthStatus = "已授权"
+                  case .denied, .restricted: photoAuthStatus = "已拒绝"
+                  case .notDetermined: photoAuthStatus = "未授权"
+                  @unknown default: photoAuthStatus = "未知"
+                  }
+                  
+                  let camera = AVCaptureDevice.authorizationStatus(for: .video)
+                  switch camera {
+                  case .authorized: cameraAuthStatus = "已授权"
+                  case .denied, .restricted: cameraAuthStatus = "已拒绝"
+                  case .notDetermined: cameraAuthStatus = "未授权"
+                  @unknown default: cameraAuthStatus = "未知"
+                  }
+              }
+              
+              func calculateCache() {
+                  let tmp = FileManager.default.temporaryDirectory
+                  if let files = try? FileManager.default.contentsOfDirectory(atPath: tmp.path) {
+                      cacheSize = "\(files.count) 个临时文件"
+                  } else {
+                      cacheSize = "0 个文件"
+                  }
+              }
+              
+              func clearCache() {
+                  let tmp = FileManager.default.temporaryDirectory
+                  if let files = try? FileManager.default.contentsOfDirectory(atPath: tmp.path) {
+                      for f in files {
+                          try? FileManager.default.removeItem(at: tmp.appendingPathComponent(f))
+                      }
+                  }
+                  calculateCache()
               }
           }
 
@@ -126,17 +657,21 @@ jobs:
               <key>CFBundlePackageType</key>
               <string>APPL</string>
               <key>CFBundleShortVersionString</key>
-              <string>1.0.0</string>
+              <string>1.1.0</string>
               <key>CFBundleVersion</key>
-              <string>1</string>
+              <string>2</string>
               <key>LSRequiresIPhoneOS</key>
               <true/>
               <key>NSCameraUsageDescription</key>
               <string>需要访问相机以拍摄与处理图片</string>
               <key>NSPhotoLibraryAddUsageDescription</key>
-              <string>需要保存处理后的无水印图片与视频到相册</string>
+              <string>需要保存处理后的无水印图片、封面及视频到系统相册</string>
               <key>NSPhotoLibraryUsageDescription</key>
               <string>需要读取相册以选择需要转换与处理的媒体文件</string>
+              <key>LSSupportsOpeningDocumentsInPlace</key>
+              <true/>
+              <key>UIFileSharingEnabled</key>
+              <true/>
               <key>UILaunchScreen</key>
               <dict/>
               <key>UISupportedInterfaceOrientations</key>
@@ -199,12 +734,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if gh release view v1.0.0 >/dev/null 2>&1; then
-            echo "Release v1.0.0 已存在，上传更新产物..."
-            gh release upload v1.0.0 NativeAgentApp.ipa --clobber
+          if gh release view v1.1.0 >/dev/null 2>&1; then
+            echo "Release v1.1.0 已存在，上传更新产物..."
+            gh release upload v1.1.0 NativeAgentApp.ipa --clobber
           else
-            echo "创建 Release v1.0.0 并上传产物..."
-            gh release create v1.0.0 NativeAgentApp.ipa \
-              --title "iOS 原生工作台 v1.0.0" \
-              --notes "未签名原生应用安装包，支持副店助手导入自签"
+            echo "创建 Release v1.1.0 并上传产物..."
+            gh release create v1.1.0 NativeAgentApp.ipa \
+              --title "iOS 原生工作台 v1.1.0 (全功能版)" \
+              --notes "升级多标签原生架构：无水印视频与封面提取存相册、图片格式与无损压缩、Markdown演示文稿转PDF、系统文档保存与原生JSBridge"
           fi
