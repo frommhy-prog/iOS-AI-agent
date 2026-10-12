@@ -726,19 +726,85 @@
     <div class="status-pill" style="font-size: 12px; font-weight: 500;">在线就绪</div>
   </header>
 
-  <main class="grid">
-      <!-- TSTZ Bot -->
-      <div class="card card-featured" onclick="openTool('bot')" style="border-left: 3px solid #6366f1;">
-        <div class="card-header">
-          <div class="card-icon" style="background: transparent; border: none; padding: 0; display: flex; align-items: center; justify-content: center;">
-            <img src="assets/icon.png" alt="TSTZ Bot" style="width: 32px; height: 32px; object-fit: contain;">
-          </div>
-          <div>
-            <div class="card-title">TSTZ Bot</div>
-            <div class="card-desc">全能私人助理 · 文本创作与智能问答</div>
-          </div>
+<main class="grid">
+      <!-- TSTZ AI 智能体 Bot -->
+      <div class="card card-featured" onclick="openTool('bot')" style="border: 1px solid rgba(37,99,235,0.25); background: linear-gradient(180deg, #ffffff 0%, #f8faff 100%);">
+        <div class="card-icon" style="background: linear-gradient(135deg, #111827 0%, #1f2937 100%); border: 1px solid rgba(255,255,255,0.15);">
+          <img src="assets/icon.png" alt="TSTZ" style="width: 28px; height: 28px; border-radius: 8px;">
         </div>
+        <div class="card-title">TSTZ AI 智能体 (Bot)</div>
+        <div class="card-desc">专属助手 · 提示词润色 · 自动化工作流与智能问答</div>
+        <div class="card-badge badge-primary">在线对话</div>
       </div>
+
+    <div class="card card-featured" onclick="openTool('interlink')">
+      <div class="card-icon" style="color: #4f46e5; background: #eef2ff;">⚡</div>
+      <div class="card-title">任务与脚本自动化调度中心</div>
+      <div class="card-desc">Interlink 空投挖矿、API 周期探活与自定义 HTTP/Webhook 调度</div>
+    </div>
+    <div class="card" onclick="openTool('audit')">
+      <div class="card-icon" style="color: #38bdf8;">🛡️</div>
+      <div class="card-title">代币安全审计</div>
+      <div class="card-desc">合约貔貅检测、流动性锁仓与风险探查</div>
+    </div>
+
+    <div class="card" onclick="openTool('video')">
+      <div class="card-icon" style="color: #f43f5e;">🎬</div>
+      <div class="card-title">短视频链接提取</div>
+      <div class="card-desc">自动清洗各平台分享文案与源链接提取</div>
+    </div>
+
+    <div class="card" onclick="openTool('convert')">
+      <div class="card-icon" style="color: #a855f7;">🔄</div>
+      <div class="card-title">多格式文档互转</div>
+      <div class="card-desc">JSON / CSV / Base64 / 文本即时互转</div>
+    </div>
+
+    <div class="card" onclick="openTool('watermark')">
+      <div class="card-icon" style="color: #ec4899;">🎨</div>
+      <div class="card-title">画布图片擦除</div>
+      <div class="card-desc">纯前端 Canvas 像素模糊擦除与水印处理</div>
+    </div>
+
+    <div class="card" onclick="openTool('clean')">
+      <div class="card-icon" style="color: #10b981;">🧹</div>
+      <div class="card-title">剪贴板参数清洗</div>
+      <div class="card-desc">剥离 UTM、spm 及平台私有追踪参数</div>
+    </div>
+
+    <div class="card" onclick="openTool('qr')">
+      <div class="card-icon" style="color: #f59e0b;">📱</div>
+      <div class="card-title">二维码工具箱</div>
+      <div class="card-desc">本地离线生成矢量二维码与快速解码</div>
+    </div>
+
+    <div class="card" onclick="openTool('rates')">
+      <div class="card-icon" style="color: #06b6d4;">📈</div>
+      <div class="card-title">加密资产与汇率</div>
+      <div class="card-desc">主流资产现货价格与法币汇率速查</div>
+    </div>
+
+    <div class="card" onclick="openTool('redirect')">
+      <div class="card-icon" style="color: #eab308;">🔍</div>
+      <div class="card-title">短链重定向嗅探</div>
+      <div class="card-desc">展开短网址并分析目标重定向链路</div>
+    </div>
+      <div class="card card-featured-sky" onclick="openTool('compress')">
+      <div class="card-icon" style="color: #0284c7; background: #f0f9ff;">🗜️</div>
+      <div class="card-title">图片压缩与格式转换</div>
+      <div class="card-desc">本地秒级压缩、JPEG/PNG/WebP 互转与相册直存</div>
+    </div>
+</main>
+
+  <div id="modal" class="modal" onclick="if(event.target===this) closeModal()">
+    <div class="modal-sheet">
+      <div class="sheet-head">
+        <div id="sheetTitle" class="sheet-title">工具详情</div>
+        <button class="sheet-close" onclick="closeModal()">✕</button>
+      </div>
+      <div id="sheetBody" style="display:flex; flex-direction:column; gap:12px;"></div>
+    </div>
+  </div>
 
   <script>
     const tools = {
