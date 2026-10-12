@@ -476,7 +476,12 @@
       <div class="card-title">短链重定向嗅探</div>
       <div class="card-desc">展开短网址并分析目标重定向链路</div>
     </div>
-  </main>
+      <div class="card" onclick="openTool('compress')" style="border-color: rgba(56, 189, 248, 0.4); background: linear-gradient(135deg, rgba(22, 30, 49, 0.85) 0%, rgba(14, 165, 233, 0.15) 100%);">
+      <div class="card-icon" style="color: #38bdf8; background: rgba(56, 189, 248, 0.15);">🗜️</div>
+      <div class="card-title">图片压缩与格式转换</div>
+      <div class="card-desc">本地秒级压缩、JPEG/PNG/WebP 互转与相册直存</div>
+    </div>
+</main>
 
   <div id="modal" class="modal" onclick="if(event.target===this) closeModal()">
     <div class="modal-sheet">
@@ -739,6 +744,68 @@
           <input id="shortUrl" placeholder="输入短网址 (如 t.co, bit.ly, b23.tv)...">
           <button class="btn-primary" onclick="sniffRedirect()">分析链路</button>
           <div id="redirectRes" class="result-box">等待分析...</div>
+        `
+      },
+      compress: {
+        title: "图片压缩与格式转换",
+        render: () => `
+          <div style="font-size:12px; font-weight:700; color:var(--text-sub); margin-bottom:4px;">🎯 目标输出格式</div>
+          <div class="seg-bar" id="compressFormatSeg">
+            <button class="seg-btn active" id="fmtWebp" onclick="setCompressFormat('image/webp')">WebP (推荐)</button>
+            <button class="seg-btn" id="fmtJpeg" onclick="setCompressFormat('image/jpeg')">JPEG (通用兼容)</button>
+            <button class="seg-btn" id="fmtPng" onclick="setCompressFormat('image/png')">PNG (无损)</button>
+          </div>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+            <div>
+              <div style="font-size:11px; font-weight:600; color:var(--text-sub); margin-bottom:4px;">⚡ 压缩质量</div>
+              <select id="compressQuality" class="btn-primary" style="width:100%; padding:8px; font-size:12px; border-radius:10px; background:var(--card-bg); color:#fff; border:1px solid var(--border);" onchange="reprocessCompressImage()">
+                <option value="0.92">原画级 (92%)</option>
+                <option value="0.80" selected>高质量 (80% 推荐)</option>
+                <option value="0.65">均衡省流 (65%)</option>
+                <option value="0.45">极限压缩 (45%)</option>
+              </select>
+            </div>
+            <div>
+              <div style="font-size:11px; font-weight:600; color:var(--text-sub); margin-bottom:4px;">📐 最大长边尺寸</div>
+              <select id="compressMaxDim" class="btn-primary" style="width:100%; padding:8px; font-size:12px; border-radius:10px; background:var(--card-bg); color:#fff; border:1px solid var(--border);" onchange="reprocessCompressImage()">
+                <option value="0" selected>保持原始分辨率</option>
+                <option value="2560">2K 超清 (2560px)</option>
+                <option value="1920">1080P 全高清 (1920px)</option>
+                <option value="1280">720P 高清 (1280px)</option>
+                <option value="800">800px 缩略图</option>
+              </select>
+            </div>
+          </div>
+
+          <input type="file" id="compressFileInput" accept="image/*" onchange="handleCompressImageSelect(event)" style="display:none;">
+          <button class="btn-primary" style="background: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%); margin-top:4px;" onclick="document.getElementById('compressFileInput').click()">📁 选取相册照片或图片文件</button>
+          <div style="font-size:11px; color:var(--text-sub); text-align:center;">本地 HTML5 Canvas 纯内存实时压缩与转换，不上传服务器，保护隐私</div>
+
+          <div id="compressResultCard" class="media-card" style="display:none; margin-top:8px;">
+            <div style="font-size:13px; font-weight:700; color:#fff; display:flex; justify-content:space-between; align-items:center;">
+              <span>🖼️ 实时压缩对比与预览</span>
+              <span id="compressRatioBadge" class="media-badge success">-0%</span>
+            </div>
+
+            <div class="media-cover-wrap" style="max-height:220px; text-align:center;">
+              <img id="compressPreviewImg" class="media-cover-img" style="max-height:220px; object-fit:contain;" alt="压缩预览">
+            </div>
+
+            <div class="badge-bar">
+              <span id="badgeOriginalSize" class="media-badge">原大小: --</span>
+              <span id="badgeTargetSize" class="media-badge success">压缩后: --</span>
+              <span id="badgeDimensions" class="media-badge">分辨率: --</span>
+              <span id="badgeTargetFmt" class="media-badge">格式: WebP</span>
+            </div>
+
+            <div class="btn-action-grid">
+              <button class="btn-action highlight" onclick="saveCompressedToPhotos()">📥 保存图片到相册</button>
+              <button class="btn-action" onclick="downloadCompressedImage()">💾 下载压缩文件</button>
+              <button class="btn-action" onclick="shareCompressedViaSystem()">🔗 系统分享面板</button>
+              <button class="btn-action" onclick="copyCompressedBase64()">📋 复制 Base64</button>
+            </div>
+          </div>
         `
       }
     };
@@ -1436,6 +1503,247 @@
 
         updateStatusUI();
       }
+    }
+
+    // ==========================================
+    // 图片压缩与格式转换插件 (纯前端本地处理)
+    // ==========================================
+    window.currentCompressFormat = 'image/webp';
+    window.currentCompressData = null;
+    window.currentCompressResult = null;
+
+    function formatFileSize(bytes) {
+      if (!bytes || bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return (bytes / Math.pow(k, i)).toFixed(i === 0 ? 0 : 1) + ' ' + sizes[i];
+    }
+
+    function setCompressFormat(fmt) {
+      window.currentCompressFormat = fmt;
+      const seg = document.getElementById('compressFormatSeg');
+      if (seg) {
+        seg.querySelectorAll('.seg-btn').forEach(btn => btn.classList.remove('active'));
+        if (fmt === 'image/webp') document.getElementById('fmtWebp')?.classList.add('active');
+        if (fmt === 'image/jpeg') document.getElementById('fmtJpeg')?.classList.add('active');
+        if (fmt === 'image/png') document.getElementById('fmtPng')?.classList.add('active');
+      }
+      if (window.currentCompressData) {
+        reprocessCompressImage();
+      }
+    }
+
+    function handleCompressImageSelect(e) {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+
+      showToast('正在读取本地图片...', '⌛');
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const img = new Image();
+        img.onload = function() {
+          window.currentCompressData = {
+            file: file,
+            img: img,
+            originalSize: file.size,
+            originalWidth: img.width,
+            originalHeight: img.height,
+            name: file.name
+          };
+          reprocessCompressImage();
+        };
+        img.onerror = function() {
+          showToast('图片加载失败，请检查文件格式', '⚠️');
+        };
+        img.src = evt.target.result;
+      };
+      reader.onerror = function() {
+        showToast('读取文件出错', '⚠️');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function reprocessCompressImage() {
+      if (!window.currentCompressData) return;
+
+      const { img, originalSize, name } = window.currentCompressData;
+      const qEl = document.getElementById('compressQuality');
+      const dimEl = document.getElementById('compressMaxDim');
+      const quality = qEl ? parseFloat(qEl.value) : 0.8;
+      const maxDim = dimEl ? parseInt(dimEl.value) : 0;
+
+      let w = img.width;
+      let h = img.height;
+      if (maxDim > 0 && (w > maxDim || h > maxDim)) {
+        if (w >= h) {
+          h = Math.round(h * (maxDim / w));
+          w = maxDim;
+        } else {
+          w = Math.round(w * (maxDim / h));
+          h = maxDim;
+        }
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+
+      const mime = window.currentCompressFormat || 'image/webp';
+      if (mime === 'image/jpeg') {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, w, h);
+      }
+      ctx.drawImage(img, 0, 0, w, h);
+
+      const qParam = mime === 'image/png' ? undefined : quality;
+      const dataUrl = canvas.toDataURL(mime, qParam);
+
+      canvas.toBlob(blob => {
+        if (!blob) {
+          showToast('格式导出失败', '⚠️');
+          return;
+        }
+
+        const extMap = { 'image/webp': 'webp', 'image/jpeg': 'jpg', 'image/png': 'png' };
+        const ext = extMap[mime] || 'jpg';
+        const baseName = (name || 'image').replace(/\.[^/.]+$/, '');
+        const filename = `${baseName}_compressed.${ext}`;
+
+        window.currentCompressResult = {
+          blob: blob,
+          dataUrl: dataUrl,
+          size: blob.size,
+          width: w,
+          height: h,
+          mime: mime,
+          filename: filename
+        };
+
+        const resCard = document.getElementById('compressResultCard');
+        if (resCard) resCard.style.display = 'flex';
+
+        const previewImg = document.getElementById('compressPreviewImg');
+        if (previewImg) previewImg.src = dataUrl;
+
+        const ratio = Math.round((1 - blob.size / originalSize) * 100);
+        const ratioBadge = document.getElementById('compressRatioBadge');
+        if (ratioBadge) {
+          if (ratio > 0) {
+            ratioBadge.innerText = `已节省 ${ratio}%`;
+            ratioBadge.className = 'media-badge success';
+          } else if (ratio < 0) {
+            ratioBadge.innerText = `体积增加 ${Math.abs(ratio)}%`;
+            ratioBadge.className = 'media-badge';
+          } else {
+            ratioBadge.innerText = '体积不变 (100%)';
+            ratioBadge.className = 'media-badge';
+          }
+        }
+
+        const bOrig = document.getElementById('badgeOriginalSize');
+        if (bOrig) bOrig.innerText = `原大小: ${formatFileSize(originalSize)}`;
+
+        const bTarget = document.getElementById('badgeTargetSize');
+        if (bTarget) {
+          bTarget.innerText = `压缩后: ${formatFileSize(blob.size)}`;
+          bTarget.className = blob.size < originalSize ? 'media-badge success' : 'media-badge';
+        }
+
+        const bDim = document.getElementById('badgeDimensions');
+        if (bDim) bDim.innerText = `分辨率: ${w}×${h}`;
+
+        const bFmt = document.getElementById('badgeTargetFmt');
+        if (bFmt) bFmt.innerText = `格式: ${ext.toUpperCase()}`;
+
+        showToast(`已压缩为 ${ext.toUpperCase()} (${formatFileSize(blob.size)})`, '✨');
+      }, mime, qParam);
+    }
+
+    function saveCompressedToPhotos() {
+      if (!window.currentCompressResult) {
+        showToast('暂无压缩就绪的图片', '⚠️');
+        return;
+      }
+      const { dataUrl, blob, filename } = window.currentCompressResult;
+
+      if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.saveImage) {
+        try {
+          window.webkit.messageHandlers.saveImage.postMessage({ dataUrl: dataUrl, filename: filename });
+          showToast('已唤起原生相册存储', '📥');
+          return;
+        } catch (e) {}
+      }
+
+      if (navigator.canShare && blob) {
+        try {
+          const file = new File([blob], filename, { type: blob.type });
+          if (navigator.canShare({ files: [file] })) {
+            navigator.share({
+              files: [file],
+              title: '保存图片到相册',
+              text: '在弹出面板中点击【存储图像】即可直接存入系统相册'
+            }).then(() => {
+              showToast('已成功唤起系统相册面板', '✨');
+            }).catch(() => {});
+            return;
+          }
+        } catch (e) {}
+      }
+
+      downloadCompressedImage();
+    }
+
+    function downloadCompressedImage() {
+      if (!window.currentCompressResult) {
+        showToast('暂无压缩就绪的图片', '⚠️');
+        return;
+      }
+      const { blob, filename } = window.currentCompressResult;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 3000);
+      showToast('已触发图片文件下载保存', '💾');
+    }
+
+    function shareCompressedViaSystem() {
+      if (!window.currentCompressResult) {
+        showToast('暂无压缩就绪的图片', '⚠️');
+        return;
+      }
+      const { blob, filename } = window.currentCompressResult;
+      if (navigator.share) {
+        try {
+          const file = new File([blob], filename, { type: blob.type });
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            navigator.share({ files: [file], title: filename });
+          } else {
+            navigator.share({ title: filename, text: `图片压缩完成: ${filename}` });
+          }
+        } catch(e) {
+          showToast('系统分享暂不可用', '⚠️');
+        }
+      } else {
+        showToast('当前环境不支持 Web Share', '⚠️');
+      }
+    }
+
+    function copyCompressedBase64() {
+      if (!window.currentCompressResult || !window.currentCompressResult.dataUrl) {
+        showToast('暂无图片数据', '⚠️');
+        return;
+      }
+      navigator.clipboard.writeText(window.currentCompressResult.dataUrl).then(() => {
+        showToast('已复制完整图片 Base64', '📋');
+      }).catch(() => {
+        showToast('剪贴板写入失败', '⚠️');
+      });
     }
 </script>
   <div id="toastMsg" class="toast"><span id="toastIcon">✨</span><span id="toastText"></span></div>
