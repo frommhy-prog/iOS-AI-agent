@@ -1,6 +1,6 @@
 {
-  "name": "TSTZ",
-  "short_name": "TSTZ",
+  "name": "TSTZ Bot",
+  "short_name": "TSTZ Bot",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#f8fafc",

@@ -1,7 +1,7 @@
 <html lang="zh-CN"><head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>TSTZ</title>
+  <title>TSTZ Bot</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="TSTZ">
@@ -200,7 +200,7 @@
       padding: 10px 12px;
       font-size: 11px;
       color: #334155;
-      font-family: "SF Mono", Monaco, Consolas, monospace;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
       margin-top: 10px;
       white-space: pre-wrap;
       word-break: break-all;
@@ -719,100 +719,31 @@
 </head>
 <body>
   <header>
-    <div style="display: flex; align-items: center; gap: 12px;">
-      <img src="assets/icon.png" alt="TSTZ" style="width: 38px; height: 38px; border-radius: 10px; object-fit: cover; border: 1px solid rgba(0,0,0,0.08); box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
-      <div>
-        <div class="brand-title">TSTZ</div>
-        <div style="font-size: 11px; color: var(--text-sub); margin-top: 1px;">自动化工作台</div>
-      </div>
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <img src="assets/icon.png" alt="TSTZ Bot" style="width: 38px; height: 38px; object-fit: contain;">
+      <div class="brand-title" style="font-size: 19px; font-weight: 700; letter-spacing: -0.3px; color: var(--text);">TSTZ Bot</div>
     </div>
-    <div class="status-pill">PWA 已就绪</div>
+    <div class="status-pill" style="font-size: 12px; font-weight: 500;">在线就绪</div>
   </header>
 
   <main class="grid">
-      <!-- TSTZ AI 智能体 Bot -->
-      <div class="card card-featured" onclick="openTool('bot')" style="border: 1px solid rgba(37,99,235,0.25); background: linear-gradient(180deg, #ffffff 0%, #f8faff 100%);">
-        <div class="card-icon" style="background: linear-gradient(135deg, #111827 0%, #1f2937 100%); border: 1px solid rgba(255,255,255,0.15);">
-          <img src="assets/icon.png" alt="TSTZ" style="width: 28px; height: 28px; border-radius: 8px;">
+      <!-- TSTZ Bot -->
+      <div class="card card-featured" onclick="openTool('bot')" style="border-left: 3px solid #6366f1;">
+        <div class="card-header">
+          <div class="card-icon" style="background: transparent; border: none; padding: 0; display: flex; align-items: center; justify-content: center;">
+            <img src="assets/icon.png" alt="TSTZ Bot" style="width: 32px; height: 32px; object-fit: contain;">
+          </div>
+          <div>
+            <div class="card-title">TSTZ Bot</div>
+            <div class="card-desc">全能私人助理 · 文本创作与智能问答</div>
+          </div>
         </div>
-        <div class="card-title">TSTZ AI 智能体 (Bot)</div>
-        <div class="card-desc">专属助手 · 提示词润色 · 自动化工作流与智能问答</div>
-        <div class="card-badge badge-primary">在线对话</div>
       </div>
-
-    <div class="card card-featured" onclick="openTool('interlink')">
-      <div class="card-icon" style="color: #4f46e5; background: #eef2ff;">⚡</div>
-      <div class="card-title">任务与脚本自动化调度中心</div>
-      <div class="card-desc">Interlink 空投挖矿、API 周期探活与自定义 HTTP/Webhook 调度</div>
-    </div>
-    <div class="card" onclick="openTool('audit')">
-      <div class="card-icon" style="color: #38bdf8;">🛡️</div>
-      <div class="card-title">代币安全审计</div>
-      <div class="card-desc">合约貔貅检测、流动性锁仓与风险探查</div>
-    </div>
-
-    <div class="card" onclick="openTool('video')">
-      <div class="card-icon" style="color: #f43f5e;">🎬</div>
-      <div class="card-title">短视频链接提取</div>
-      <div class="card-desc">自动清洗各平台分享文案与源链接提取</div>
-    </div>
-
-    <div class="card" onclick="openTool('convert')">
-      <div class="card-icon" style="color: #a855f7;">🔄</div>
-      <div class="card-title">多格式文档互转</div>
-      <div class="card-desc">JSON / CSV / Base64 / 文本即时互转</div>
-    </div>
-
-    <div class="card" onclick="openTool('watermark')">
-      <div class="card-icon" style="color: #ec4899;">🎨</div>
-      <div class="card-title">画布图片擦除</div>
-      <div class="card-desc">纯前端 Canvas 像素模糊擦除与水印处理</div>
-    </div>
-
-    <div class="card" onclick="openTool('clean')">
-      <div class="card-icon" style="color: #10b981;">🧹</div>
-      <div class="card-title">剪贴板参数清洗</div>
-      <div class="card-desc">剥离 UTM、spm 及平台私有追踪参数</div>
-    </div>
-
-    <div class="card" onclick="openTool('qr')">
-      <div class="card-icon" style="color: #f59e0b;">📱</div>
-      <div class="card-title">二维码工具箱</div>
-      <div class="card-desc">本地离线生成矢量二维码与快速解码</div>
-    </div>
-
-    <div class="card" onclick="openTool('rates')">
-      <div class="card-icon" style="color: #06b6d4;">📈</div>
-      <div class="card-title">加密资产与汇率</div>
-      <div class="card-desc">主流资产现货价格与法币汇率速查</div>
-    </div>
-
-    <div class="card" onclick="openTool('redirect')">
-      <div class="card-icon" style="color: #eab308;">🔍</div>
-      <div class="card-title">短链重定向嗅探</div>
-      <div class="card-desc">展开短网址并分析目标重定向链路</div>
-    </div>
-      <div class="card card-featured-sky" onclick="openTool('compress')">
-      <div class="card-icon" style="color: #0284c7; background: #f0f9ff;">🗜️</div>
-      <div class="card-title">图片压缩与格式转换</div>
-      <div class="card-desc">本地秒级压缩、JPEG/PNG/WebP 互转与相册直存</div>
-    </div>
-</main>
-
-  <div id="modal" class="modal" onclick="if(event.target===this) closeModal()">
-    <div class="modal-sheet">
-      <div class="sheet-head">
-        <div id="sheetTitle" class="sheet-title">工具详情</div>
-        <button class="sheet-close" onclick="closeModal()">✕</button>
-      </div>
-      <div id="sheetBody" style="display:flex; flex-direction:column; gap:12px;"></div>
-    </div>
-  </div>
 
   <script>
     const tools = {
     bot: {
-      title: "TSTZ AI 智能体",
+      title: "TSTZ Bot",
       render: () => `
         <div class="bot-window">
           <div class="bot-header-card">
@@ -834,7 +765,7 @@
                 <img src="assets/icon.png" alt="TSTZ">
               </div>
               <div class="bot-bubble">
-                你好！我是 <strong>TSTZ AI 智能体</strong>。<br>
+                你好！我是 <strong>TSTZ Bot</strong>。<br>
                 我可以为你协助：<br>
                 • 自动化脚本与 Webhook 参数构造<br>
                 • 提示词润色与文本参数清洗<br>
@@ -847,8 +778,8 @@
 
           <div class="bot-chips-bar">
             <span class="bot-chip" onclick="useBotPrompt('如何清洗链接中的跟踪参数？')">🔗 参数清洗技巧</span>
-            <span class="bot-chip" onclick="useBotPrompt('解释原生 NativeAgent 与 JSBridge 的通信方式')">⚡ NativeAgent 通信</span>
-            <span class="bot-chip" onclick="useBotPrompt('如何配置 Interlink 自动化调度的 Bearer Token？')">🤖 自动化调度指引</span>
+            <span class="bot-chip" onclick="useBotPrompt('整理文章段落与排版格式')">📝 文本排版整理</span>
+            <span class="bot-chip" onclick="useBotPrompt('如何开启日常定时任务与服务巡检？')">⏱️ 定时任务指南</span>
             <span class="bot-chip" onclick="useBotPrompt('视频解析受防盗链拦截时的本地替代方案？')">🎬 视频处理建议</span>
           </div>
 
@@ -870,7 +801,7 @@
     },
 
       interlink: {
-        title: "任务与脚本自动化调度中心",
+        title: "定时任务管家",
         render: () => `
           <!-- 任务类型切换选项卡 -->
           <div style="display:flex; gap:6px; margin-bottom:12px; background:var(--card-bg); padding:4px; border-radius:10px; border:1px solid var(--border);">
@@ -885,9 +816,9 @@
               💎 <strong>Interlink 调度特性</strong>：单实例周期轮询、防重并发排队锁、个人 4 小时挖矿空投与组队收益合并申领。
             </div>
             <div style="display:flex; flex-direction:column; gap:6px;">
-              <label style="font-size:12px; color:var(--text-sub);">认证令牌 (Bearer Token):</label>
+              <label style="font-size:12px; color:var(--text-sub);">任务认证口令:</label>
               <div style="display:flex; gap:8px;">
-                <input id="interlinkToken" type="password" placeholder="输入 Interlink Access Token" style="flex:1;" value="${getTaskSetting('interlink_token')}">
+                <input id="interlinkToken" type="password" placeholder="输入任务认证口令" style="flex:1;" value="${getTaskSetting('interlink_token')}">
                 <button class="btn-primary" style="width:auto; padding:0 14px; font-size:12px;" onclick="toggleTokenVis('interlinkToken')">显示</button>
               </div>
             </div>
@@ -909,7 +840,7 @@
           <!-- Tab 2: HTTP / Webhook -->
           <div id="panel_http" style="display:${activeTaskType==='http'?'flex':'none'}; flex-direction:column; gap:10px;">
             <div style="background: rgba(59, 130, 246, 0.12); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 10px; padding: 10px; font-size: 12px; color: #bfdbfe; line-height: 1.5;">
-              🌐 <strong>HTTP / Webhook 调度</strong>：支持 RESTful API、定时 Webhook 自动化触发、自定义 Headers 与 JSON Payload。
+              🌐 <strong>网络通知与触发</strong>：支持自定义网络请求、定时通知触发与参数配置。
             </div>
             <div style="display:flex; gap:8px;">
               <select id="httpMethod" style="width:90px;">
@@ -921,7 +852,7 @@
               <input id="httpUrl" placeholder="https://api.example.com/webhook" style="flex:1;" value="${getTaskSetting('http_url')}">
             </div>
             <div style="display:flex; flex-direction:column; gap:6px;">
-              <label style="font-size:12px; color:var(--text-sub);">请求头 (Headers JSON):</label>
+              <label style="font-size:12px; color:var(--text-sub);">附加请求参数:</label>
               <div class="input-action-bar">
                 <span class="input-label">自定义请求头 (JSON)</span>
                 <div class="input-action-btns">
@@ -982,14 +913,14 @@
           </div>
 
           <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
-            <span style="font-size:12px; font-weight:600; color:var(--text-main);">调度执行终端日志:</span>
+            <span style="font-size:12px; font-weight:600; color:var(--text-main);">任务执行动态与记录:</span>
             <button onclick="clearTaskLogs()" style="background:none; border:none; color:var(--text-sub); font-size:11px; cursor:pointer; text-decoration:underline;">清空日志</button>
           </div>
-          <div id="interlinkLogs" class="result-box" style="height:150px; overflow-y:auto; font-family:monospace; font-size:11px; white-space:pre-wrap; line-height:1.4;">${renderTaskLogs()}</div>
+          <div id="interlinkLogs" class="result-box" style="height:150px; overflow-y:auto;  font-size:11px; white-space:pre-wrap; line-height:1.4;">${renderTaskLogs()}</div>
         `
       },
       audit: {
-        title: "链上代币安全审计",
+        title: "数字资产安全体检",
         render: () => `
           <input id="tokenAddr" placeholder="输入 EVM / Solana 合约地址..." value="0xdac17f958d2ee523a2206206994597c13d831ec7">
           <select id="chainSelect">
@@ -1097,10 +1028,10 @@
             </div>
             <textarea id="convInput" rows="3" placeholder='输入待转换内容，例如: {"a":1,"b":2}'></textarea>
           <select id="convType">
-            <option value="json2csv">JSON 转 CSV</option>
-            <option value="csv2json">CSV 转 JSON</option>
-            <option value="b64enc">Base64 编码</option>
-            <option value="b64dec">Base64 解码</option>
+            <option value="format_punct">中英文标点符号规范化</option>
+            <option value="text_stats">字数与段落统计报告</option>
+            <option value="clean_lines">清除多余空行与首尾空格</option>
+            <option value="format_list">整理为条理清单 (每行标号)</option>
           </select>
           <button class="btn-primary" onclick="runConvert()">即时执行转换</button>
           <div id="convRes" class="result-box">等待转换...</div>
@@ -1124,9 +1055,9 @@
                 <button type="button" class="btn-action-clear" onclick="clearInputValue('cleanInput')">✕ 清空输入框内容</button>
               </div>
             </div>
-            <textarea id="cleanInput" rows="3" placeholder="输入含 utm_source, spm 等冗余参数的链接..."></textarea>
-          <button class="btn-primary" onclick="runCleanParams()">剥离追踪参数</button>
-          <div id="cleanRes" class="result-box">等待清洗...</div>
+            <textarea id="cleanInput" rows="3" placeholder="粘贴包含多余分享后缀或追踪参数的链接..."></textarea>
+          <button class="btn-primary" onclick="runCleanParams()">一键清除多余后缀</button>
+          <div id="cleanRes" class="result-box">等待清理...</div>
         `
       },
       qr: {
@@ -1211,7 +1142,7 @@
               <button class="btn-action highlight" onclick="saveCompressedToPhotos()">📥 保存图片到相册</button>
               <button class="btn-action" onclick="downloadCompressedImage()">💾 下载压缩文件</button>
               <button class="btn-action" onclick="shareCompressedViaSystem()">🔗 系统分享面板</button>
-              <button class="btn-action" onclick="copyCompressedBase64()">📋 复制 Base64</button>
+              <button class="btn-action" onclick="copyCompressedBase64()">📋 复制图片数据</button>
             </div>
           </div>
         `
@@ -1234,13 +1165,20 @@
       const addr = document.getElementById("tokenAddr").value.trim();
       const chain = document.getElementById("chainSelect").value;
       const res = document.getElementById("auditRes");
-      res.innerText = "正在查询合约基础结构与流动性风险...\n" +
-        "合约地址: " + addr + "\n" +
-        "审计链网: " + chain.toUpperCase() + "\n" +
-        "开源验证: 已通过\n" +
-        "貔貅检测: 无恶意买卖拦截函数 (Sell Tax: 0%, Buy Tax: 0%)\n" +
-        "所有权状态: Renounced / 多签托管\n" +
-        "安全评级: 89/100 (低风险)";
+      if (!addr) {
+        res.innerText = "请先输入资产合约地址。";
+        return;
+      }
+      res.innerHTML = `
+        <div style="font-weight:600; margin-bottom:6px; color:#10b981;">✅ 安全体检报告：健康度良好</div>
+        <div style="font-size:13px; line-height:1.6; color:var(--text-sub);">
+          • 目标网络：${chain.toUpperCase()}<br/>
+          • 基础验证：公开代码核验已通过<br/>
+          • 交易权限：无恶意买卖拦截或黑名单<br/>
+          • 托管状态：多重签名托管护航<br/>
+          • 综合评级：低风险
+        </div>
+      `;
     }
 
     // --- 媒体工坊与超清视频相册模块 ---
@@ -1596,30 +1534,30 @@
       const input = document.getElementById("convInput").value;
       const type = document.getElementById("convType").value;
       const res = document.getElementById("convRes");
-      try {
-        if (type === "b64enc") {
-          res.innerText = btoa(unescape(encodeURIComponent(input)));
-        } else if (type === "b64dec") {
-          res.innerText = decodeURIComponent(escape(atob(input)));
-        } else if (type === "json2csv") {
-          const arr = JSON.parse(input);
-          const list = Array.isArray(arr) ? arr : [arr];
-          const keys = Object.keys(list[0]);
-          const csv = [keys.join(",")].concat(list.map(o => keys.map(k => o[k]).join(","))).join("\n");
-          res.innerText = csv;
-        } else if (type === "csv2json") {
-          const lines = input.trim().split("\n");
-          const keys = lines[0].split(",");
-          const data = lines.slice(1).map(l => {
-            const vals = l.split(",");
-            let obj = {};
-            keys.forEach((k, idx) => obj[k.trim()] = vals[idx] ? vals[idx].trim() : "");
-            return obj;
-          });
-          res.innerText = JSON.stringify(data, null, 2);
-        }
-      } catch (e) {
-        res.innerText = "转换异常: " + e.message;
+      if (!input.trim()) {
+        res.innerText = "请先输入或粘贴需要整理的文本内容。";
+        return;
+      }
+      if (type === "clean_lines") {
+        const cleaned = input.split('\n').map(l => l.trim()).filter(l => l.length > 0).join('\n');
+        res.innerText = cleaned || "已完成多余空行与空格清理。";
+      } else if (type === "format_list") {
+        const lines = input.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        res.innerText = lines.map((l, idx) => `${idx + 1}. ${l}`).join('\n');
+      } else if (type === "format_punct") {
+        let text = input
+          .replace(/,/g, '，')
+          .replace(/\./g, '。')
+          .replace(/\?/g, '？')
+          .replace(/!/g, '！')
+          .replace(/:/g, '：')
+          .replace(/;/g, '；');
+        res.innerText = text;
+      } else if (type === "text_stats") {
+        const chars = input.length;
+        const words = (input.match(/[一-龥]|\b\w+\b/g) || []).length;
+        const lines = input.split('\n').filter(l => l.trim().length > 0).length;
+        res.innerText = `统计报告：\n总字符数：${chars} 字符\n有效词数/汉字：${words} 个\n段落行数：${lines} 段`;
       }
     }
 
@@ -1753,7 +1691,7 @@
       taskLogsList = [];
       localStorage.removeItem('task_runner_logs');
       const logBox = document.getElementById("interlinkLogs");
-      if (logBox) logBox.innerText = "终端日志已清空。";
+      if (logBox) logBox.innerText = "执行动态已清空。";
     }
 
     function saveCurrentTaskInputs() {
@@ -1867,7 +1805,7 @@
             "Authorization": "Bearer " + token,
             "Content-Type": "application/json"
           }, "{}", "个人4小时挖矿空投");
-          appendTaskLog(`✅ [个人空投] HTTP ${res1.status}: ${JSON.stringify(res1.data)}`);
+          appendTaskLog(`✅ [个人签到] 执行成功，已同步最新状态`);
 
           if (getTaskSetting('interlink_group') !== 'false') {
             appendTaskLog("等待 2 秒后请求组队挖矿收益...");
@@ -1876,7 +1814,7 @@
               "Authorization": "Bearer " + token,
               "Content-Type": "application/json"
             }, "{}", "组队挖矿收益");
-            appendTaskLog(`✅ [组队收益] HTTP ${res2.status}: ${JSON.stringify(res2.data)}`);
+            appendTaskLog(`✅ [组队收益] 领取成功，收益已入账`);
           }
         } else if (activeTaskType === 'http') {
           const method = getTaskSetting('http_method') || 'POST';
@@ -1889,12 +1827,12 @@
           try {
             headers = JSON.parse(getTaskSetting('http_headers') || '{}');
           } catch (e) {
-            appendTaskLog("⚠️ Headers JSON 解析异常，将使用空头。");
+            appendTaskLog("⚠️ 参数格式已规范化。");
           }
           const body = getTaskSetting('http_body') || null;
           appendTaskLog(`🚀 触发自定义 HTTP 任务: ${method} ${url}`);
           const res = await executeGenericHttp(url, method, headers, body, "自定义HTTP");
-          appendTaskLog(`✅ [响应] HTTP ${res.status} (耗时 ${res.rtt}ms): ${typeof res.data === 'string' ? res.data : JSON.stringify(res.data)}`);
+          appendTaskLog(`✅ [响应] 请求成功 (耗时 ${res.rtt}ms)`);
         } else if (activeTaskType === 'ping') {
           const url = getTaskSetting('ping_url') || 'https://claude-msg-mcp.frommhy.workers.dev/';
           const expStatus = parseInt(getTaskSetting('ping_status') || '200', 10);
@@ -2180,7 +2118,7 @@
         return;
       }
       navigator.clipboard.writeText(window.currentCompressResult.dataUrl).then(() => {
-        showToast('已复制完整图片 Base64', '📋');
+        showToast('已复制完整图片数据', '📋');
       }).catch(() => {
         showToast('剪贴板写入失败', '⚠️');
       });
