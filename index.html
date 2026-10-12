@@ -1,12 +1,11 @@
 <html lang="zh-CN"><head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Miao Agent iOS 自动化工作台</title>
+  <title>TSTZ</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="MiaoAgent">
+  <meta name="apple-mobile-web-app-title" content="TSTZ">
   <meta name="theme-color" content="#0f172a">
-  <link rel="apple-touch-icon" href="https://img.icons8.com/color/180/cyber-security.png">
   <style>
     :root {
       --bg: #f8fafc;
@@ -489,12 +488,18 @@
     }
     .float-icon { font-size: 18px; }
   </style>
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.json">
 </head>
 <body>
   <header>
-    <div>
-      <div class="brand-title">Miao Agent iOS</div>
-      <div style="font-size: 11px; color: var(--text-sub); margin-top: 2px;">轻量化自动化工作台</div>
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <img src="assets/icon.png" alt="TSTZ" style="width: 38px; height: 38px; border-radius: 10px; object-fit: cover; border: 1px solid rgba(0,0,0,0.08); box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
+      <div>
+        <div class="brand-title">TSTZ</div>
+        <div style="font-size: 11px; color: var(--text-sub); margin-top: 1px;">自动化工作台</div>
+      </div>
     </div>
     <div class="status-pill">PWA 已就绪</div>
   </header>
@@ -1220,7 +1225,7 @@
       try {
         if (navigator.share) {
           await navigator.share({
-            title: "Miao Agent 超清视频",
+            title: "TSTZ 超清视频",
             url: currentVideoUrl
           });
         } else {
