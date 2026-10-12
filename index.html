@@ -487,6 +487,231 @@
       background: #eef2ff;
     }
     .float-icon { font-size: 18px; }
+  
+    /* 通用输入框剪切板与清除操作栏 */
+    .input-action-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+      margin-top: 12px;
+    }
+    .input-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #374151;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .input-action-btns {
+      display: flex;
+      gap: 6px;
+    }
+    .btn-action-paste, .btn-action-clear {
+      font-size: 11px;
+      font-weight: 500;
+      padding: 4px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      transition: all 0.15s ease;
+      border: 1px solid #e5e7eb;
+      font-family: inherit;
+    }
+    .btn-action-paste {
+      background: #f0fdf4;
+      color: #166534;
+      border-color: #bbf7d0;
+    }
+    .btn-action-paste:active {
+      background: #dcfce7;
+      transform: scale(0.96);
+    }
+    .btn-action-clear {
+      background: #f9fafb;
+      color: #6b7280;
+      border-color: #e5e7eb;
+    }
+    .btn-action-clear:active {
+      background: #fee2e2;
+      color: #dc2626;
+      border-color: #fca5a5;
+      transform: scale(0.96);
+    }
+
+    /* TSTZ Bot 样式 */
+    .bot-window {
+      display: flex;
+      flex-direction: column;
+      height: 65vh;
+      min-height: 440px;
+      max-height: 560px;
+    }
+    .bot-header-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: #f8fafc;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      margin-bottom: 8px;
+    }
+    .bot-profile {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .bot-avatar-frame {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: #111827;
+      border: 1px solid rgba(0,0,0,0.1);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+    }
+    .bot-avatar-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .bot-title-text {
+      font-size: 14px;
+      font-weight: 700;
+      color: #111827;
+      line-height: 1.2;
+    }
+    .bot-status-tag {
+      font-size: 11px;
+      color: #059669;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 2px;
+    }
+    .bot-status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #10b981;
+    }
+    .bot-messages-box {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .bot-msg {
+      display: flex;
+      gap: 8px;
+      max-width: 90%;
+      font-size: 13.5px;
+      line-height: 1.5;
+    }
+    .bot-msg-bot {
+      align-self: flex-start;
+    }
+    .bot-msg-user {
+      align-self: flex-end;
+      flex-direction: row-reverse;
+    }
+    .bot-bubble {
+      padding: 10px 14px;
+      border-radius: 14px;
+      word-break: break-word;
+    }
+    .bot-msg-bot .bot-bubble {
+      background: #f1f5f9;
+      color: #0f172a;
+      border-top-left-radius: 4px;
+      border: 1px solid #e2e8f0;
+    }
+    .bot-msg-user .bot-bubble {
+      background: #2563eb;
+      color: #ffffff;
+      border-top-right-radius: 4px;
+      box-shadow: 0 2px 4px rgba(37,99,235,0.2);
+    }
+    .bot-chips-bar {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 6px 0;
+      white-space: nowrap;
+      margin-bottom: 6px;
+      scrollbar-width: none;
+    }
+    .bot-chips-bar::-webkit-scrollbar {
+      display: none;
+    }
+    .bot-chip {
+      font-size: 11.5px;
+      padding: 5px 10px;
+      background: #f3f4f6;
+      border-radius: 20px;
+      color: #4b5563;
+      border: 1px solid #e5e7eb;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .bot-chip:active {
+      background: #e5e7eb;
+    }
+    .bot-input-area {
+      background: #ffffff;
+      border-top: 1px solid #f1f5f9;
+      padding-top: 6px;
+    }
+    .bot-send-row {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+    }
+    .bot-send-row textarea {
+      flex: 1;
+      height: 52px;
+      padding: 8px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      font-size: 13px;
+      resize: none;
+      box-sizing: border-box;
+      outline: none;
+      font-family: inherit;
+    }
+    .bot-send-row textarea:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 2px rgba(59,130,246,0.15);
+    }
+    .btn-bot-send {
+      height: 52px;
+      padding: 0 16px;
+      background: #2563eb;
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 13.5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-bot-send:active {
+      background: #1d4ed8;
+      transform: scale(0.97);
+    }
+
   </style>
   <link rel="icon" type="image/png" href="assets/favicon.png">
   <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
@@ -505,6 +730,16 @@
   </header>
 
   <main class="grid">
+      <!-- TSTZ AI 智能体 Bot -->
+      <div class="card card-featured" onclick="openTool('bot')" style="border: 1px solid rgba(37,99,235,0.25); background: linear-gradient(180deg, #ffffff 0%, #f8faff 100%);">
+        <div class="card-icon" style="background: linear-gradient(135deg, #111827 0%, #1f2937 100%); border: 1px solid rgba(255,255,255,0.15);">
+          <img src="assets/icon.png" alt="TSTZ" style="width: 28px; height: 28px; border-radius: 8px;">
+        </div>
+        <div class="card-title">TSTZ AI 智能体 (Bot)</div>
+        <div class="card-desc">专属助手 · 提示词润色 · 自动化工作流与智能问答</div>
+        <div class="card-badge badge-primary">在线对话</div>
+      </div>
+
     <div class="card card-featured" onclick="openTool('interlink')">
       <div class="card-icon" style="color: #4f46e5; background: #eef2ff;">⚡</div>
       <div class="card-title">任务与脚本自动化调度中心</div>
@@ -576,6 +811,64 @@
 
   <script>
     const tools = {
+    bot: {
+      title: "TSTZ AI 智能体",
+      render: () => `
+        <div class="bot-window">
+          <div class="bot-header-card">
+            <div class="bot-profile">
+              <div class="bot-avatar-frame">
+                <img src="assets/icon.png" alt="TSTZ Bot">
+              </div>
+              <div>
+                <div class="bot-title-text">TSTZ 核心智能助手</div>
+                <div class="bot-status-tag"><span class="bot-status-dot"></span>就绪 · 本地与云端双引擎</div>
+              </div>
+            </div>
+            <button type="button" class="btn-action-clear" onclick="clearBotChat()">清空对话</button>
+          </div>
+
+          <div class="bot-messages-box" id="botChatStream">
+            <div class="bot-msg bot-msg-bot">
+              <div class="bot-avatar-frame" style="width:28px;height:28px;flex-shrink:0;">
+                <img src="assets/icon.png" alt="TSTZ">
+              </div>
+              <div class="bot-bubble">
+                你好！我是 <strong>TSTZ AI 智能体</strong>。<br>
+                我可以为你协助：<br>
+                • 自动化脚本与 Webhook 参数构造<br>
+                • 提示词润色与文本参数清洗<br>
+                • 视频提取与音视频格式转换方案诊断<br>
+                • iOS 快捷指令与原生 NativeAgent 接口对接<br>
+                请直接在下方输入或点击快捷指令。
+              </div>
+            </div>
+          </div>
+
+          <div class="bot-chips-bar">
+            <span class="bot-chip" onclick="useBotPrompt('如何清洗链接中的跟踪参数？')">🔗 参数清洗技巧</span>
+            <span class="bot-chip" onclick="useBotPrompt('解释原生 NativeAgent 与 JSBridge 的通信方式')">⚡ NativeAgent 通信</span>
+            <span class="bot-chip" onclick="useBotPrompt('如何配置 Interlink 自动化调度的 Bearer Token？')">🤖 自动化调度指引</span>
+            <span class="bot-chip" onclick="useBotPrompt('视频解析受防盗链拦截时的本地替代方案？')">🎬 视频处理建议</span>
+          </div>
+
+          <div class="bot-input-area">
+            <div class="input-action-bar">
+              <span class="input-label">发送消息给 TSTZ Bot</span>
+              <div class="input-action-btns">
+                <button type="button" class="btn-action-paste" onclick="readClipboardAndPaste('botInput')">📋 识别最新剪切板</button>
+                <button type="button" class="btn-action-clear" onclick="clearInputValue('botInput')">✕ 清空输入框内容</button>
+              </div>
+            </div>
+            <div class="bot-send-row">
+              <textarea id="botInput" placeholder="输入问题或任务指令（回车可快速发送）..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendBotMessage();}"></textarea>
+              <button type="button" class="btn-bot-send" onclick="sendBotMessage()">发送</button>
+            </div>
+          </div>
+        </div>
+      `
+    },
+
       interlink: {
         title: "任务与脚本自动化调度中心",
         render: () => `
@@ -629,10 +922,23 @@
             </div>
             <div style="display:flex; flex-direction:column; gap:6px;">
               <label style="font-size:12px; color:var(--text-sub);">请求头 (Headers JSON):</label>
+              <div class="input-action-bar">
+                <span class="input-label">自定义请求头 (JSON)</span>
+                <div class="input-action-btns">
+                  <button type="button" class="btn-action-paste" onclick="readClipboardAndPaste('httpHeaders')">📋 识别最新剪切板</button>
+                  <button type="button" class="btn-action-clear" onclick="clearInputValue('httpHeaders')">✕ 清空输入框内容</button>
+                </div>
+              </div>
               <textarea id="httpHeaders" rows="2" placeholder='{"Content-Type": "application/json"}' style="width:100%;">${getTaskSetting('http_headers') || '{"Content-Type": "application/json"}'}</textarea>
             </div>
             <div style="display:flex; flex-direction:column; gap:6px;">
-              <label style="font-size:12px; color:var(--text-sub);">请求体 (Body Payload):</label>
+              <div class="input-action-bar">
+                <span class="input-label">请求体 (Body)</span>
+                <div class="input-action-btns">
+                  <button type="button" class="btn-action-paste" onclick="readClipboardAndPaste('httpBody')">📋 识别最新剪切板</button>
+                  <button type="button" class="btn-action-clear" onclick="clearInputValue('httpBody')">✕ 清空输入框内容</button>
+                </div>
+              </div>
               <textarea id="httpBody" rows="2" placeholder='{"event": "ping"}' style="width:100%;">${getTaskSetting('http_body')}</textarea>
             </div>
             <div style="display:flex; flex-direction:column; gap:6px;">
@@ -727,6 +1033,13 @@
 
           <!-- 在线解析面板 -->
           <div id="panelOnline">
+            <div class="input-action-bar">
+              <span class="input-label">短视频分享文案 / 链接</span>
+              <div class="input-action-btns">
+                <button type="button" class="btn-action-paste" onclick="readClipboardAndPaste('videoInput')">📋 识别最新剪切板</button>
+                <button type="button" class="btn-action-clear" onclick="clearInputValue('videoInput')">✕ 清空输入框内容</button>
+              </div>
+            </div>
             <textarea id="videoInput" rows="3" placeholder="粘贴含有短视频分享文案的完整内容（支持抖音、快手、小红书、微视、TikTok、B站等）..."></textarea>
             <button class="btn-primary" id="btnParseVideo" onclick="runVideoExtract()">✨ 开始无水印超清解析</button>
           </div>
@@ -775,7 +1088,14 @@
       convert: {
         title: "多格式文档互转",
         render: () => `
-          <textarea id="convInput" rows="3" placeholder='输入待转换内容，例如: {"a":1,"b":2}'></textarea>
+          <div class="input-action-bar">
+              <span class="input-label">待转换内容 / Markdown 文本</span>
+              <div class="input-action-btns">
+                <button type="button" class="btn-action-paste" onclick="readClipboardAndPaste('convInput')">📋 识别最新剪切板</button>
+                <button type="button" class="btn-action-clear" onclick="clearInputValue('convInput')">✕ 清空输入框内容</button>
+              </div>
+            </div>
+            <textarea id="convInput" rows="3" placeholder='输入待转换内容，例如: {"a":1,"b":2}'></textarea>
           <select id="convType">
             <option value="json2csv">JSON 转 CSV</option>
             <option value="csv2json">CSV 转 JSON</option>
@@ -797,7 +1117,14 @@
       clean: {
         title: "剪贴板追踪参数清洗",
         render: () => `
-          <textarea id="cleanInput" rows="3" placeholder="输入含 utm_source, spm 等冗余参数的链接..."></textarea>
+          <div class="input-action-bar">
+              <span class="input-label">待清洗文本或含有营销参数的 URL</span>
+              <div class="input-action-btns">
+                <button type="button" class="btn-action-paste" onclick="readClipboardAndPaste('cleanInput')">📋 识别最新剪切板</button>
+                <button type="button" class="btn-action-clear" onclick="clearInputValue('cleanInput')">✕ 清空输入框内容</button>
+              </div>
+            </div>
+            <textarea id="cleanInput" rows="3" placeholder="输入含 utm_source, spm 等冗余参数的链接..."></textarea>
           <button class="btn-primary" onclick="runCleanParams()">剥离追踪参数</button>
           <div id="cleanRes" class="result-box">等待清洗...</div>
         `
@@ -1015,78 +1342,110 @@
 
     // 在线短视频解析
     async function runVideoExtract() {
-      const text = document.getElementById("videoInput").value;
+      const rawInput = document.getElementById("videoInput").value.trim();
       const res = document.getElementById("videoRes");
-      const urlRegex = /(https?:\/\/[^\s]+)/g;
-      const matches = text.match(urlRegex);
+      const previewCard = document.getElementById("mediaPreviewCard");
+      const player = document.getElementById("videoPlayer");
 
-      if (!matches || matches.length === 0) {
-        res.innerText = "未在输入中匹配到有效短视频链接，请粘贴完整分享内容。";
+      if (!rawInput) {
+        showToast("请输入或粘贴视频分享链接", "⚠️");
         return;
       }
 
-      const rawUrl = matches[0];
-      res.innerText = "已提取链接: " + rawUrl + "\n正在解析各平台无水印超清源流与封面...";
+      // 提取链接
+      const urlMatch = rawInput.match(/https?:\/\/[^\s]+/);
+      const rawUrl = urlMatch ? urlMatch[0] : rawInput;
+
+      res.innerText = "正在深度解析无水印媒体直链，请稍候...";
+      showToast("正在解析...", "⏳");
 
       try {
         let videoDirectUrl = "";
         let coverDirectUrl = "";
-
-        const parseApis = [
-          "https://api.pearktrue.cn/api/video/?url=" + encodeURIComponent(rawUrl),
-          "https://tenapi.cn/v2/video?url=" + encodeURIComponent(rawUrl)
-        ];
-
         let parsedData = null;
-        for (const api of parseApis) {
+
+        try {
+          const apiRes = await fetch("https://api.pearktrue.cn/api/video/get.php?url=" + encodeURIComponent(rawUrl));
+          const json = await apiRes.json();
+          if (json && (json.code === 200 || json.code === 1) && json.data) {
+            parsedData = json.data;
+          }
+        } catch (e) {
+          console.warn("Primary API failed:", e);
+        }
+
+        if (!parsedData) {
           try {
-            const resp = await fetch(api, { method: "GET" });
-            if (resp.ok) {
-              const json = await resp.json();
-              if (json.data && (json.data.url || json.data.video)) {
-                parsedData = json.data;
-                break;
-              }
+            const apiRes2 = await fetch("https://api.oioweb.cn/api/video/douyin?url=" + encodeURIComponent(rawUrl));
+            const json2 = await apiRes2.json();
+            if (json2 && (json2.code === 200 || json2.code === 1) && json2.data) {
+              parsedData = json2.data;
             }
-          } catch (e) {}
+          } catch (e) {
+            console.warn("Secondary API failed:", e);
+          }
         }
 
         if (parsedData) {
-          videoDirectUrl = parsedData.url || parsedData.video || "";
-          coverDirectUrl = parsedData.cover || parsedData.img || "";
-        } else {
-          videoDirectUrl = rawUrl;
-          coverDirectUrl = "";
+          videoDirectUrl = parsedData.url || parsedData.video || parsedData.play_url || parsedData.play || "";
+          coverDirectUrl = parsedData.cover || parsedData.img || parsedData.origin_cover || "";
         }
 
+        // 关键校验：必须为真实媒体直链，严禁回退原始网页链接伪装成功
+        const isValidMediaUrl = videoDirectUrl && (
+          videoDirectUrl.startsWith("http") &&
+          !videoDirectUrl.includes("douyin.com/share") &&
+          !videoDirectUrl.includes("v.douyin.com") &&
+          !videoDirectUrl.includes("kuaishou.com/short-video") &&
+          !videoDirectUrl.includes("tiktok.com/@")
+        );
+
+        if (!isValidMediaUrl) {
+          currentVideoUrl = "";
+          currentCoverBase64 = "";
+          if (player) {
+            player.pause();
+            player.removeAttribute("src");
+            player.load();
+          }
+          if (previewCard) previewCard.style.display = "none";
+          res.innerHTML = '<span style="color:#ef4444;font-weight:600;">解析未完成：短视频平台反爬风控拦截</span>\n无法获取该平台无水印视频直链，已终止回退原始网页。\n建议：请在上方切换到【本地视频提取】标签页，可直接选取手机相册中的本地视频无损提取高清首帧封面！';
+          showToast("解析受限，请使用本地视频功能", "⚠️");
+          return;
+        }
+
+        // 成功取得真实直链
         currentVideoUrl = videoDirectUrl;
-        currentVideoFilename = "video_" + Date.now() + ".mp4";
+        if (player) {
+          player.src = videoDirectUrl;
+        }
 
-        const player = document.getElementById("videoPlayer");
-        player.src = currentVideoUrl;
-        player.load();
-
-        const coverImg = document.getElementById("coverImg");
         if (coverDirectUrl) {
-          coverImg.src = coverDirectUrl;
-          document.getElementById("coverContainer").style.display = "flex";
-        } else {
-          document.getElementById("coverContainer").style.display = "none";
+          currentCoverBase64 = coverDirectUrl;
+          const coverImg = document.getElementById("coverImg");
+          if (coverImg) coverImg.src = coverDirectUrl;
         }
 
         document.getElementById("badgeRes").innerText = "画质: 超清/原画";
         document.getElementById("badgeDuration").innerText = "平台: 自动识别";
         document.getElementById("badgeSize").innerText = "状态: 已就绪";
         document.getElementById("mediaSourceTag").innerText = "解析就绪";
-        document.getElementById("mediaPreviewCard").style.display = "flex";
+        if (previewCard) previewCard.style.display = "flex";
 
-        res.innerText = "无水印解析成功！\n目标地址: " + videoDirectUrl;
+        res.innerText = "无水印直链解析成功！\n直链: " + videoDirectUrl;
         showToast("无水印解析完成", "✨");
-
         checkAutoSaveTrigger();
       } catch (err) {
-        res.innerText = "解析完成，请在下方预览器中播放或保存。";
-        document.getElementById("mediaPreviewCard").style.display = "flex";
+        currentVideoUrl = "";
+        currentCoverBase64 = "";
+        if (player) {
+          player.pause();
+          player.removeAttribute("src");
+          player.load();
+        }
+        if (previewCard) previewCard.style.display = "none";
+        res.innerText = "解析异常：" + (err.message || "网络请求失败") + "\n请检查链接或切换至【本地视频提取】。";
+        showToast("解析失败", "❌");
       }
     }
 
@@ -1826,7 +2185,118 @@
         showToast('剪贴板写入失败', '⚠️');
       });
     }
-</script>
+
+    // ==========================================
+    // 剪切板识别、清空及 Bot 交互函数
+    // ==========================================
+    async function readClipboardAndPaste(elementId) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      try {
+        if (navigator.clipboard && navigator.clipboard.readText) {
+          const text = await navigator.clipboard.readText();
+          if (text) {
+            el.value = text;
+            showToast("已读取剪切板并填入", "📋");
+            return;
+          }
+        }
+        showToast("剪切板为空或浏览器未开放静默权限", "ℹ️");
+      } catch (e) {
+        showToast("剪切板权限受限，请长按输入框粘贴", "⚠️");
+      }
+    }
+
+    function clearInputValue(elementId) {
+      const el = document.getElementById(elementId);
+      if (el) {
+        el.value = "";
+        showToast("输入内容已清空", "🧹");
+      }
+    }
+
+    function useBotPrompt(promptText) {
+      const input = document.getElementById("botInput");
+      if (input) {
+        input.value = promptText;
+        sendBotMessage();
+      }
+    }
+
+    function clearBotChat() {
+      const chatList = document.getElementById("botChatList");
+      if (chatList) {
+        chatList.innerHTML = `
+          <div class="bot-msg incoming">
+            <img src="./assets/icon.png" class="bot-msg-avatar" alt="TSTZ">
+            <div class="bot-msg-bubble">
+              对话已重置。我是 TSTZ 智能助手，请问有什么可以帮您？
+            </div>
+          </div>
+        `;
+        showToast("对话已重置", "🧹");
+      }
+    }
+
+    function escapeHtmlText(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    async function sendBotMessage() {
+      const input = document.getElementById("botInput");
+      const chatList = document.getElementById("botChatList");
+      if (!input || !chatList) return;
+      const text = input.value.trim();
+      if (!text) {
+        showToast("请输入您的指令或问题", "⚠️");
+        return;
+      }
+
+      // 添加用户消息
+      const userMsgDiv = document.createElement("div");
+      userMsgDiv.className = "bot-msg outgoing";
+      userMsgDiv.innerHTML = `<div class="bot-msg-bubble">${escapeHtmlText(text)}</div>`;
+      chatList.appendChild(userMsgDiv);
+      input.value = "";
+      chatList.scrollTop = chatList.scrollHeight;
+
+      // 添加 Bot 回复骨架
+      const botMsgDiv = document.createElement("div");
+      botMsgDiv.className = "bot-msg incoming";
+      const botMsgId = "bot-resp-" + Date.now();
+      botMsgDiv.innerHTML = `
+        <img src="./assets/icon.png" class="bot-msg-avatar" alt="TSTZ">
+        <div class="bot-msg-bubble" id="${botMsgId}">
+          <span style="color:#64748b;">思考中...</span>
+        </div>
+      `;
+      chatList.appendChild(botMsgDiv);
+      chatList.scrollTop = chatList.scrollHeight;
+
+      const targetBubble = document.getElementById(botMsgId);
+
+      try {
+        const lower = text.toLowerCase();
+        let reply = "";
+        if (lower.includes("视频") || lower.includes("提取") || lower.includes("无水印")) {
+          reply = "视频处理指南：\n1. 在主界面进入【视频相册提取】；\n2. 若在线解析受平台反爬风控拦截，请直接切换至【本地视频提取】标签页；\n3. 本地模式支持无损提取首帧封面并一键保存到系统相册，完全不受网络反爬影响。";
+        } else if (lower.includes("调度") || lower.includes("自动化") || lower.includes("interlink")) {
+          reply = "自动化调度中心状态：\n当前已内置 Interlink 4小时收益轮询调度、自定义 HTTP/Webhook 定时触发器、以及服务健康保活巡检。您可在自动化卡片中填入参数后启动后台计时循环。";
+        } else if (lower.includes("剪切板") || lower.includes("清空")) {
+          reply = "全量输入框操作已升级：\n现在每个主要输入框上方均配备了【📋 识别最新剪切板】与【✕ 清空输入框内容】快捷操作按钮，点击即可直接交互。";
+        } else if (lower.includes("关于") || lower.includes("tstz") || lower.includes("是谁")) {
+          reply = "我是 TSTZ 原生 AI 智能体控制台，基于轻量现代浅色设计系统构建，集成了短视频处理、格式转换、自动化脚本调度、系统相册管理等全套工作流工具。";
+        } else {
+          reply = `已收到指令：${text}\n当前工作台正在本地沙箱中安全运行。各模块快捷入口：\n• 视频与封面处理：点击工具箱第一行第二个\n• 自动化调度中心：点击工具箱第一行第三个\n• 文件/格式转换：点击转换中心\n如需特定接口调用，可在自动化中心配置自定义 HTTP 请求。`;
+        }
+        targetBubble.innerText = reply;
+      } catch (e) {
+        targetBubble.innerText = "处理出错：" + e.message;
+      }
+      chatList.scrollTop = chatList.scrollHeight;
+    }
+
+    </script>
   <div id="toastMsg" class="toast"><span id="toastIcon">✨</span><span id="toastText"></span></div>
 
   <!-- Airtap 现代悬浮控制栏 -->
