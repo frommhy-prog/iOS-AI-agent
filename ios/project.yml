@@ -1,0 +1,40 @@
+name: TSTZAgent
+options:
+  bundleIdPrefix: com.Hao-Yi-Miao
+  deploymentTarget:
+    iOS: "26.0"
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    SWIFT_STRICT_CONCURRENCY: minimal
+    ENABLE_USER_SCRIPT_SANDBOXING: NO
+targets:
+  TSTZAgent:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.Hao-Yi-Miao.TSTZ-Agent
+        MARKETING_VERSION: "0.2"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1"
+        CODE_SIGN_STYLE: Automatic
+    info:
+      path: Config/Info.plist
+      properties:
+        CFBundleDisplayName: TSTZ Agent
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
+        NSMicrophoneUsageDescription: 语音输入需要使用麦克风
+        NSSpeechRecognitionUsageDescription: 语音输入需要语音识别
+        NSPhotoLibraryAddUsageDescription: 保存处理后的图片和视频到相册
+        NSCalendarsFullAccessUsageDescription: 助理需要为你添加日程
+        NSRemindersFullAccessUsageDescription: 助理需要为你添加提醒事项
+        NSAlarmKitUsageDescription: 助理需要为你设置闹钟
