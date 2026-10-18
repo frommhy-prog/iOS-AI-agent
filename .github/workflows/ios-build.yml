@@ -1,0 +1,50 @@
+name: ios-build
+on:
+  push:
+    paths:
+      - 'ios/**'
+      - '.github/workflows/ios-build.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: ios
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select newest Xcode
+        run: |
+          ls -d /Applications/Xcode*.app || true
+          NEW=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -1)
+          if [ -n "$NEW" ]; then sudo xcode-select -s "$NEW/Contents/Developer"; fi
+          xcodebuild -version
+      - name: Install xcodegen
+        run: brew install xcodegen
+      - name: Generate project
+        run: xcodegen generate
+      - name: Build (no signing)
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          mkdir -p ci
+          xcodebuild -project TSTZAgent.xcodeproj -scheme TSTZAgent -sdk iphoneos -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO build 2>&1 | tee ci/build.log | tail -n 5
+      - name: Summarize
+        if: always()
+        run: |
+          mkdir -p ci
+          touch ci/build.log
+          { xcodebuild -version; grep -E "error:" ci/build.log | sort -u | head -n 80; } > ci/build-errors.txt || true
+          if grep -q "BUILD SUCCEEDED" ci/build.log; then echo "RESULT: SUCCEEDED" >> ci/build-errors.txt; else echo "RESULT: FAILED" >> ci/build-errors.txt; fi
+          rm -f ci/build.log
+      - name: Commit results
+        if: always()
+        run: |
+          git config user.name "ci-bot"
+          git config user.email "ci-bot@users.noreply.github.com"
+          git add -A ci
+          [ -d TSTZAgent.xcodeproj ] && git add -A TSTZAgent.xcodeproj
+          [ -d Config ] && git add -A Config
+          git diff --cached --quiet || (git commit -m "ci: update build result [skip ci]" && git pull --rebase origin main && git push)
