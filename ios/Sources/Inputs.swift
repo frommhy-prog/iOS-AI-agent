@@ -4,65 +4,122 @@ import Speech
 import AVFoundation
 import Vision
 
-// 语音输入：优先端侧识别（中文）
+// 语音输入：边说边出文字，结束后自动填入输入框
 final class Voice: ObservableObject {
     @Published var listening = false
-    @Published var text = ""
+    @Published var live = ""
+    @Published var level: CGFloat = 0
+    @Published var error = ""
+    var onText: ((String) -> Void)?
+    var onFinished: ((String) -> Void)?
+
     private let rec = SFSpeechRecognizer(locale: Locale(identifier: "zh-CN"))
     private let engine = AVAudioEngine()
     private var req: SFSpeechAudioBufferRecognitionRequest?
     private var task: SFSpeechRecognitionTask?
+    private var final = ""
+    private var limit: Timer?
+    private var done = false
 
     func toggle() { listening ? stop() : start() }
 
     func start() {
+        error = ""
+        guard let rec, rec.isAvailable else {
+            error = "语音识别暂时不可用，请检查网络，或在 设置 → 通用 → 键盘 里开启听写"
+            return
+        }
         SFSpeechRecognizer.requestAuthorization { st in
-            guard st == .authorized else { return }
-            AVAudioApplication.requestRecordPermission { ok in
-                guard ok else { return }
-                DispatchQueue.main.async { self.begin() }
+            DispatchQueue.main.async {
+                guard st == .authorized else { self.error = "请在 设置 → TSTZ Bot 里允许语音识别"; return }
+                AVAudioApplication.requestRecordPermission { ok in
+                    DispatchQueue.main.async {
+                        guard ok else { self.error = "请在 设置 → TSTZ Bot 里允许麦克风"; return }
+                        self.begin()
+                    }
+                }
             }
         }
     }
 
     private func begin() {
         do {
+            final = ""
+            live = ""
+            done = false
             let s = AVAudioSession.sharedInstance()
             try s.setCategory(.record, mode: .measurement, options: .duckOthers)
             try s.setActive(true, options: .notifyOthersOnDeactivation)
             let r = SFSpeechAudioBufferRecognitionRequest()
             r.shouldReportPartialResults = true
-            if rec?.supportsOnDeviceRecognition == true { r.requiresOnDeviceRecognition = true }
+            r.requiresOnDeviceRecognition = false
             req = r
             let input = engine.inputNode
             input.removeTap(onBus: 0)
-            input.installTap(onBus: 0, bufferSize: 1024, format: input.outputFormat(forBus: 0)) { b, _ in r.append(b) }
+            input.installTap(onBus: 0, bufferSize: 1024, format: input.outputFormat(forBus: 0)) { [weak self] b, _ in
+                r.append(b)
+                guard let ch = b.floatChannelData?[0] else { return }
+                let n = Int(b.frameLength)
+                var sum: Float = 0
+                for i in 0..<n { sum += ch[i] * ch[i] }
+                let rms = (sum / Float(max(n, 1))).squareRoot()
+                DispatchQueue.main.async { self?.level = CGFloat(min(rms * 14, 1)) }
+            }
             engine.prepare()
             try engine.start()
-            text = ""
             listening = true
+            limit?.invalidate()
+            limit = Timer.scheduledTimer(withTimeInterval: 60, repeats: false) { [weak self] _ in self?.stop() }
             task = rec?.recognitionTask(with: r) { [weak self] res, err in
                 DispatchQueue.main.async {
-                    if let res { self?.text = res.bestTranscription.formattedString }
-                    if err != nil || res?.isFinal == true { self?.stop() }
+                    guard let self, !self.done else { return }
+                    if let res {
+                        self.final = res.bestTranscription.formattedString
+                        self.live = self.final
+                        self.onText?(self.final)
+                    }
+                    if res?.isFinal == true {
+                        self.finish()
+                    } else if err != nil {
+                        if self.final.isEmpty { self.error = "没有听清，请靠近一点再说一次" }
+                        self.finish()
+                    }
                 }
             }
         } catch {
             listening = false
+            self.error = "无法启动麦克风：\(error.localizedDescription)"
         }
     }
 
     func stop() {
+        guard listening else { return }
         if engine.isRunning { engine.stop() }
         engine.inputNode.removeTap(onBus: 0)
         req?.endAudio()
-        task?.cancel()
         listening = false
-        try? AVAudioSession.sharedInstance().setActive(false)
+        level = 0
+        limit?.invalidate()
+        // 等待识别给出最终结果，最多 2.5 秒
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) { [weak self] in self?.finish() }
+    }
+
+    private func finish() {
+        guard !done else { return }
+        done = true
+        task?.cancel()
+        task = nil
+        req = nil
+        listening = false
+        level = 0
+        limit?.invalidate()
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        if final.isEmpty && error.isEmpty { error = "没有听到声音，请再试一次" }
+        onFinished?(final)
     }
 }
 
-// 图片文字识别（端侧 Vision）
+// 图片文字识别与类别识别（端侧 Vision）
 enum OCR {
     static func text(_ url: URL) -> String {
         guard let cg = UIImage(contentsOfFile: url.path)?.cgImage else { return "" }
@@ -72,6 +129,27 @@ enum OCR {
         req.usesLanguageCorrection = true
         try? VNImageRequestHandler(cgImage: cg).perform([req])
         return (req.results ?? []).compactMap { $0.topCandidates(1).first?.string }.joined(separator: "\n")
+    }
+
+    static let names: [String: String] = [
+        "text": "文字", "document": "文档", "screenshot": "截图", "graphic": "图形", "logo": "标志", "poster": "海报",
+        "illustration": "插画", "drawing": "绘图", "people": "人物", "person": "人物", "portrait": "人像", "adult": "人物",
+        "food": "食物", "animal": "动物", "dog": "狗", "cat": "猫", "plant": "植物", "flower": "花", "sky": "天空",
+        "outdoor": "户外", "indoor": "室内", "building": "建筑", "car": "汽车", "vehicle": "车辆", "water": "水景",
+        "mountain": "山", "beach": "海滩", "night": "夜景", "computer": "电脑", "electronics": "电子产品", "phone": "手机",
+        "furniture": "家具", "clothing": "服饰", "book": "书籍", "table": "桌子", "sign": "标牌", "paper": "纸张"
+    ]
+
+    static func labels(_ url: URL) -> [String] {
+        guard let cg = UIImage(contentsOfFile: url.path)?.cgImage else { return [] }
+        let req = VNClassifyImageRequest()
+        try? VNImageRequestHandler(cgImage: cg).perform([req])
+        var out: [String] = []
+        for o in req.results ?? [] where o.confidence > 0.2 {
+            if let n = names[o.identifier], !out.contains(n) { out.append(n) }
+            if out.count >= 4 { break }
+        }
+        return out
     }
 }
 
