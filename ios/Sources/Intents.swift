@@ -1,7 +1,7 @@
 import AppIntents
 import Foundation
 
-// 这些动作会自动出现在系统「快捷指令」App 里，可配合「自动化」定时触发
+// 这些动作会自动出现在系统「快捷指令」App 里，可配合「自动化」定时触发，也可被其他应用调用
 struct AddToKB: AppIntent {
     static let title: LocalizedStringResource = "加入知识库"
     @Parameter(title: "名称") var name: String
@@ -26,6 +26,15 @@ struct AskAgent: AppIntent {
     @Parameter(title: "问题") var question: String
     @MainActor func perform() async throws -> some IntentResult & ReturnsValue<String> {
         .result(value: await Agent.shared.quick(question))
+    }
+}
+
+struct RunSkillIntent: AppIntent {
+    static let title: LocalizedStringResource = "运行脚本技能"
+    @Parameter(title: "技能名") var name: String
+    @Parameter(title: "输入") var input: String
+    func perform() async throws -> some IntentResult & ReturnsValue<String> {
+        .result(value: Skills.run(name, input).1)
     }
 }
 
