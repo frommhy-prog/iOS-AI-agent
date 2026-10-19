@@ -1,5 +1,6 @@
 Xcode 26.6
 Build version 17F113
-/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/Nlp.swift:198:22: error: incorrect argument label in call (have '_:_:_:useModel:rep:', expected '_:_:_:useModel:repeatDaily:')
-/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/Nlp.swift:198:62: error: type 'Int' cannot be used as a boolean; test for '!= 0' instead
+/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/Agent.swift:127:30: error: type 'OCR' has no member 'labels'
+/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/Agent.swift:140:25: error: type 'OCR' has no member 'labels'
+/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/Agent.swift:176:21: error: cannot find 'Connectors' in scope
 RESULT: FAILED
