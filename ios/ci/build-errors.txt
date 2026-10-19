@@ -1,8 +1,3 @@
 Xcode 26.6
 Build version 17F113
-/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/Views.swift:73:13: error: cannot find 'ChatView' in scope
-/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/Views.swift:74:13: error: cannot find 'KBView' in scope
-/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/Views.swift:75:13: error: cannot find 'ToolboxView' in scope
-/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/Views.swift:76:13: error: cannot find 'TasksView' in scope
-/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/Views.swift:77:13: error: cannot find 'SettingsView' in scope
-RESULT: FAILED
+RESULT: SUCCEEDED
