@@ -18,6 +18,7 @@
 		47C97D24B171177E5A6C4B71 /* Views.swift in Sources */ = {isa = PBXBuildFile; fileRef = 621A2DE7A16D900DCDF95AEB /* Views.swift */; };
 		57D9239B4518F758C13C07AE /* Intents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E77773F5FB905773A523861 /* Intents.swift */; };
 		7FC7A04B4A9080AB60333E65 /* Tools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05408064C5C05006B3B3FC2B /* Tools.swift */; };
+		80DAF64F60138F1BDD58EAE4 /* Nlp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 079E08E36F2DDC80E544B87F /* Nlp.swift */; };
 		83240D646233F25E85AFD909 /* Core.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33EBC208AAA0685459A77CA5 /* Core.swift */; };
 		866E4E05F73F3EE3D38FA8DD /* Agent.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACBF423F7B5759B73346F23C /* Agent.swift */; };
 		9E37CA693379DE9AF71C601C /* TSTZLive.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF218E53F50DB3F539B8391E /* TSTZLive.swift */; };
@@ -51,6 +52,7 @@
 
 /* Begin PBXFileReference section */
 		05408064C5C05006B3B3FC2B /* Tools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tools.swift; sourceTree = "<group>"; };
+		079E08E36F2DDC80E544B87F /* Nlp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nlp.swift; sourceTree = "<group>"; };
 		212AB59CCC01B37C55962AA5 /* Sys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sys.swift; sourceTree = "<group>"; };
 		2278739C9AFDEB72BE37F77B /* KB.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KB.swift; sourceTree = "<group>"; };
 		33EBC208AAA0685459A77CA5 /* Core.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core.swift; sourceTree = "<group>"; };
@@ -89,6 +91,7 @@
 				538B1AE356CDE5429BD0C0FF /* Inputs.swift */,
 				9E77773F5FB905773A523861 /* Intents.swift */,
 				2278739C9AFDEB72BE37F77B /* KB.swift */,
+				079E08E36F2DDC80E544B87F /* Nlp.swift */,
 				89F24A218559D43937FB9D03 /* Skills.swift */,
 				212AB59CCC01B37C55962AA5 /* Sys.swift */,
 				768C409EAE9C5BBFF33875C9 /* Tasks.swift */,
@@ -232,6 +235,7 @@
 				12FD0B56358C9F5E0AB36C0A /* Inputs.swift in Sources */,
 				57D9239B4518F758C13C07AE /* Intents.swift in Sources */,
 				2405425FCCFE6D2C655F6357 /* KB.swift in Sources */,
+				80DAF64F60138F1BDD58EAE4 /* Nlp.swift in Sources */,
 				0AC8A978437CD4FE7F9010A7 /* Skills.swift in Sources */,
 				322B3BC1D66B1216F50B6750 /* Sys.swift in Sources */,
 				28A20CDFB92F271ED269FB77 /* Tasks.swift in Sources */,

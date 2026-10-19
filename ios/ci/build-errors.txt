@@ -1,4 +1,8 @@
 Xcode 26.6
 Build version 17F113
-/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/Assets.xcassets: error: None of the input catalogs contained a matching stickers icon set, app icon set, or icon stack named  "AppIcon".
+/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/Nlp.swift:191:55: error: cannot find 'Live' in scope
+/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/Nlp.swift:198:22: error: incorrect argument label in call (have '_:_:_:useModel:rep:', expected '_:_:_:useModel:repeatDaily:')
+/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/Nlp.swift:198:62: error: type 'Int' cannot be used as a boolean; test for '!= 0' instead
+/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/Nlp.swift:200:23: error: cannot find 'Live' in scope
+/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/Nlp.swift:210:55: error: cannot find 'Live' in scope
 RESULT: FAILED
