@@ -19,6 +19,7 @@
 		322B3BC1D66B1216F50B6750 /* Sys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 212AB59CCC01B37C55962AA5 /* Sys.swift */; };
 		3C05A0D94A27DFFF28B70CE5 /* Live.swift in Sources */ = {isa = PBXBuildFile; fileRef = B22543CF5123098D67A28DBF /* Live.swift */; };
 		47C97D24B171177E5A6C4B71 /* Views.swift in Sources */ = {isa = PBXBuildFile; fileRef = 621A2DE7A16D900DCDF95AEB /* Views.swift */; };
+		5370F2BF1C7ED6D0B4D73107 /* Photo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89CEF7EFD9393FE7C57411B1 /* Photo.swift */; };
 		57D9239B4518F758C13C07AE /* Intents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E77773F5FB905773A523861 /* Intents.swift */; };
 		7FC7A04B4A9080AB60333E65 /* Tools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05408064C5C05006B3B3FC2B /* Tools.swift */; };
 		80DAF64F60138F1BDD58EAE4 /* Nlp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 079E08E36F2DDC80E544B87F /* Nlp.swift */; };
@@ -68,6 +69,7 @@
 		5FEFA9DDDAD17E868ACA8C3D /* Connectors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Connectors.swift; sourceTree = "<group>"; };
 		621A2DE7A16D900DCDF95AEB /* Views.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views.swift; sourceTree = "<group>"; };
 		768C409EAE9C5BBFF33875C9 /* Tasks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tasks.swift; sourceTree = "<group>"; };
+		89CEF7EFD9393FE7C57411B1 /* Photo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Photo.swift; sourceTree = "<group>"; };
 		89F24A218559D43937FB9D03 /* Skills.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Skills.swift; sourceTree = "<group>"; };
 		9E77773F5FB905773A523861 /* Intents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Intents.swift; sourceTree = "<group>"; };
 		9EA5BECF265FC50BEC0A1A36 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -104,6 +106,7 @@
 				B22543CF5123098D67A28DBF /* Live.swift */,
 				079E08E36F2DDC80E544B87F /* Nlp.swift */,
 				438EC194EEB4ADC78229C1DD /* Pages.swift */,
+				89CEF7EFD9393FE7C57411B1 /* Photo.swift */,
 				89F24A218559D43937FB9D03 /* Skills.swift */,
 				212AB59CCC01B37C55962AA5 /* Sys.swift */,
 				768C409EAE9C5BBFF33875C9 /* Tasks.swift */,
@@ -252,6 +255,7 @@
 				3C05A0D94A27DFFF28B70CE5 /* Live.swift in Sources */,
 				80DAF64F60138F1BDD58EAE4 /* Nlp.swift in Sources */,
 				E203B621242D87C2CBE3070F /* Pages.swift in Sources */,
+				5370F2BF1C7ED6D0B4D73107 /* Photo.swift in Sources */,
 				0AC8A978437CD4FE7F9010A7 /* Skills.swift in Sources */,
 				322B3BC1D66B1216F50B6750 /* Sys.swift in Sources */,
 				28A20CDFB92F271ED269FB77 /* Tasks.swift in Sources */,
