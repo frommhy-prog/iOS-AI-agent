@@ -9,16 +9,45 @@
 /* Begin PBXBuildFile section */
 		0AC8A978437CD4FE7F9010A7 /* Skills.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89F24A218559D43937FB9D03 /* Skills.swift */; };
 		12FD0B56358C9F5E0AB36C0A /* Inputs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 538B1AE356CDE5429BD0C0FF /* Inputs.swift */; };
+		1C2617D8A34CDF3E7F4EFDCD /* BotActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = C387607AEA72EC82BAB7D840 /* BotActivity.swift */; };
 		2405425FCCFE6D2C655F6357 /* KB.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2278739C9AFDEB72BE37F77B /* KB.swift */; };
+		26B6FFC36C855C2723342760 /* TSTZLive.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = CA43F639E4E53E643A17976D /* TSTZLive.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		28A20CDFB92F271ED269FB77 /* Tasks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 768C409EAE9C5BBFF33875C9 /* Tasks.swift */; };
+		2A73D636588FE06443F3389B /* BotActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = C387607AEA72EC82BAB7D840 /* BotActivity.swift */; };
 		322B3BC1D66B1216F50B6750 /* Sys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 212AB59CCC01B37C55962AA5 /* Sys.swift */; };
 		47C97D24B171177E5A6C4B71 /* Views.swift in Sources */ = {isa = PBXBuildFile; fileRef = 621A2DE7A16D900DCDF95AEB /* Views.swift */; };
 		57D9239B4518F758C13C07AE /* Intents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E77773F5FB905773A523861 /* Intents.swift */; };
 		7FC7A04B4A9080AB60333E65 /* Tools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05408064C5C05006B3B3FC2B /* Tools.swift */; };
 		83240D646233F25E85AFD909 /* Core.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33EBC208AAA0685459A77CA5 /* Core.swift */; };
 		866E4E05F73F3EE3D38FA8DD /* Agent.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACBF423F7B5759B73346F23C /* Agent.swift */; };
+		9E37CA693379DE9AF71C601C /* TSTZLive.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF218E53F50DB3F539B8391E /* TSTZLive.swift */; };
 		C701694EEA0EDC66ECD33E53 /* Convert.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E7A3B5D3328EA286FF776B2 /* Convert.swift */; };
+		ED731F7ADB35979D4DA8C2CD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9EA5BECF265FC50BEC0A1A36 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		797FA646C9A495954E8F923B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D2FE42AE479D2D1B634062F2 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B643960F685F8273A2C308BB;
+			remoteInfo = TSTZLive;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		3BAB1FC5D407CEAC4000A410 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				26B6FFC36C855C2723342760 /* TSTZLive.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		05408064C5C05006B3B3FC2B /* Tools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tools.swift; sourceTree = "<group>"; };
@@ -32,13 +61,19 @@
 		768C409EAE9C5BBFF33875C9 /* Tasks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tasks.swift; sourceTree = "<group>"; };
 		89F24A218559D43937FB9D03 /* Skills.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Skills.swift; sourceTree = "<group>"; };
 		9E77773F5FB905773A523861 /* Intents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Intents.swift; sourceTree = "<group>"; };
+		9EA5BECF265FC50BEC0A1A36 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		ACBF423F7B5759B73346F23C /* Agent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agent.swift; sourceTree = "<group>"; };
+		C387607AEA72EC82BAB7D840 /* BotActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotActivity.swift; sourceTree = "<group>"; };
+		CA43F639E4E53E643A17976D /* TSTZLive.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = TSTZLive.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		EF218E53F50DB3F539B8391E /* TSTZLive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TSTZLive.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
 		3FC154D8F186F9EC8CAFE957 = {
 			isa = PBXGroup;
 			children = (
+				5D1D9F37D95BAE835CBC346E /* Live */,
+				609B3E2104A99197C6DE6B09 /* Shared */,
 				4DC162DFAB117A7966EFCA1D /* Sources */,
 				83F991EFE156CD213E0B4A68 /* Products */,
 			);
@@ -48,6 +83,7 @@
 			isa = PBXGroup;
 			children = (
 				ACBF423F7B5759B73346F23C /* Agent.swift */,
+				9EA5BECF265FC50BEC0A1A36 /* Assets.xcassets */,
 				4E7A3B5D3328EA286FF776B2 /* Convert.swift */,
 				33EBC208AAA0685459A77CA5 /* Core.swift */,
 				538B1AE356CDE5429BD0C0FF /* Inputs.swift */,
@@ -62,10 +98,27 @@
 			path = Sources;
 			sourceTree = "<group>";
 		};
+		5D1D9F37D95BAE835CBC346E /* Live */ = {
+			isa = PBXGroup;
+			children = (
+				EF218E53F50DB3F539B8391E /* TSTZLive.swift */,
+			);
+			path = Live;
+			sourceTree = "<group>";
+		};
+		609B3E2104A99197C6DE6B09 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				C387607AEA72EC82BAB7D840 /* BotActivity.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
 		83F991EFE156CD213E0B4A68 /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				5C067C41C430F996A9787706 /* TSTZAgent.app */,
+				CA43F639E4E53E643A17976D /* TSTZLive.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -73,15 +126,35 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		B643960F685F8273A2C308BB /* TSTZLive */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C8F9F61B42C3069210F5F938 /* Build configuration list for PBXNativeTarget "TSTZLive" */;
+			buildPhases = (
+				13F59FB9EDB1F6BEDCB2ACFF /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = TSTZLive;
+			packageProductDependencies = (
+			);
+			productName = TSTZLive;
+			productReference = CA43F639E4E53E643A17976D /* TSTZLive.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		DFA57580B65A1F516A648EB5 /* TSTZAgent */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 7F62CECD23A82244B28639B9 /* Build configuration list for PBXNativeTarget "TSTZAgent" */;
 			buildPhases = (
 				32D0FC1DAEDB465F41FA9579 /* Sources */,
+				014CD0BF14AD81E78308FEF5 /* Resources */,
+				3BAB1FC5D407CEAC4000A410 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				5B5AC5C6C7B96B25F59AE946 /* PBXTargetDependency */,
 			);
 			name = TSTZAgent;
 			packageProductDependencies = (
@@ -99,6 +172,9 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
+					B643960F685F8273A2C308BB = {
+						ProvisioningStyle = Automatic;
+					};
 					DFA57580B65A1F516A648EB5 = {
 						ProvisioningStyle = Automatic;
 					};
@@ -119,16 +195,38 @@
 			projectRoot = "";
 			targets = (
 				DFA57580B65A1F516A648EB5 /* TSTZAgent */,
+				B643960F685F8273A2C308BB /* TSTZLive */,
 			);
 		};
 /* End PBXProject section */
 
+/* Begin PBXResourcesBuildPhase section */
+		014CD0BF14AD81E78308FEF5 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				ED731F7ADB35979D4DA8C2CD /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
+		13F59FB9EDB1F6BEDCB2ACFF /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				2A73D636588FE06443F3389B /* BotActivity.swift in Sources */,
+				9E37CA693379DE9AF71C601C /* TSTZLive.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		32D0FC1DAEDB465F41FA9579 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				866E4E05F73F3EE3D38FA8DD /* Agent.swift in Sources */,
+				1C2617D8A34CDF3E7F4EFDCD /* BotActivity.swift in Sources */,
 				C701694EEA0EDC66ECD33E53 /* Convert.swift in Sources */,
 				83240D646233F25E85AFD909 /* Core.swift in Sources */,
 				12FD0B56358C9F5E0AB36C0A /* Inputs.swift in Sources */,
@@ -143,6 +241,14 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		5B5AC5C6C7B96B25F59AE946 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B643960F685F8273A2C308BB /* TSTZLive */;
+			targetProxy = 797FA646C9A495954E8F923B /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		2A113F162C08BFC5528C7E7B /* Release */ = {
@@ -203,6 +309,44 @@
 			};
 			name = Release;
 		};
+		6B356CAA06CD9A7E6D43D3AE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = Config/LiveInfo.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 0.3;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.Hao-Yi-Miao.TSTZ-Agent.Live";
+				PRODUCT_NAME = TSTZLive;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+		9FC7BE04B7A2F5CFDCE8C95A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = Config/LiveInfo.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 0.3;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.Hao-Yi-Miao.TSTZ-Agent.Live";
+				PRODUCT_NAME = TSTZLive;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
 		B9BE77631DC80F8000FF6B77 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -215,8 +359,9 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.2;
+				MARKETING_VERSION = 0.3;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Hao-Yi-Miao.TSTZ-Agent";
+				PRODUCT_NAME = TSTZBot;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
@@ -299,8 +444,9 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.2;
+				MARKETING_VERSION = 0.3;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Hao-Yi-Miao.TSTZ-Agent";
+				PRODUCT_NAME = TSTZBot;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = 1;
 			};
@@ -314,6 +460,15 @@
 			buildConfigurations = (
 				B9BE77631DC80F8000FF6B77 /* Debug */,
 				F776FFC1551EE8CBC33DC16B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C8F9F61B42C3069210F5F938 /* Build configuration list for PBXNativeTarget "TSTZLive" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9FC7BE04B7A2F5CFDCE8C95A /* Debug */,
+				6B356CAA06CD9A7E6D43D3AE /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

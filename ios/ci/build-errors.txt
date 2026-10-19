@@ -1,3 +1,4 @@
 Xcode 26.6
 Build version 17F113
+/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/Assets.xcassets: error: None of the input catalogs contained a matching stickers icon set, app icon set, or icon stack named  "AppIcon".
 RESULT: FAILED
