@@ -5,6 +5,9 @@ on:
       - 'ios/**'
       - '.github/workflows/ios-build.yml'
   workflow_dispatch:
+concurrency:
+  group: ios-build
+  cancel-in-progress: true
 permissions:
   contents: write
 jobs:
@@ -17,10 +20,11 @@ jobs:
       - uses: actions/checkout@v4
       - name: Select newest Xcode
         run: |
-          ls -d /Applications/Xcode*.app || true
           NEW=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -1)
           if [ -n "$NEW" ]; then sudo xcode-select -s "$NEW/Contents/Developer"; fi
           xcodebuild -version
+      - name: Make app icon
+        run: swift tools/make_icon.swift Sources/Assets.xcassets/AppIcon.appiconset/icon.png
       - name: Install xcodegen
         run: brew install xcodegen
       - name: Generate project
@@ -47,4 +51,5 @@ jobs:
           git add -A ci
           [ -d TSTZAgent.xcodeproj ] && git add -A TSTZAgent.xcodeproj
           [ -d Config ] && git add -A Config
+          [ -f Sources/Assets.xcassets/AppIcon.appiconset/icon.png ] && git add -f Sources/Assets.xcassets/AppIcon.appiconset/icon.png
           git diff --cached --quiet || (git commit -m "ci: update build result [skip ci]" && git pull --rebase origin main && git push)
