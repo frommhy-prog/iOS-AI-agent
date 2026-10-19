@@ -1,12 +1,17 @@
 import SwiftUI
 import SQLite3
 
-enum T {
-    static let bg = Color(red: 0.055, green: 0.067, blue: 0.086)
-    static let card = Color(red: 0.09, green: 0.106, blue: 0.133)
-    static let line = Color(red: 0.137, green: 0.16, blue: 0.2)
-    static let mint = Color(red: 0.24, green: 0.86, blue: 0.66)
-    static let mute = Color(red: 0.545, green: 0.58, blue: 0.64)
+enum Theme {
+    static let accents: [(String, Color)] = [
+        ("薄荷绿", Color(red: 0.05, green: 0.56, blue: 0.43)),
+        ("海军蓝", Color(red: 0.12, green: 0.30, blue: 0.62)),
+        ("琥珀金", Color(red: 0.70, green: 0.46, blue: 0.05)),
+        ("紫罗兰", Color(red: 0.42, green: 0.30, blue: 0.85)),
+        ("玫瑰红", Color(red: 0.84, green: 0.20, blue: 0.40))
+    ]
+    static func accent(_ i: Int) -> Color { accents[min(max(i, 0), accents.count - 1)].1 }
+    static let gold = Color(red: 0.93, green: 0.74, blue: 0.36)
+    static let navy = Color(red: 0.05, green: 0.12, blue: 0.28)
 }
 
 typealias Row = [String: Any]
@@ -34,7 +39,13 @@ final class DB {
         CREATE TABLE IF NOT EXISTS skill(name TEXT PRIMARY KEY, desc TEXT, code TEXT, ts REAL);
         CREATE TABLE IF NOT EXISTS prompt(ver INTEGER PRIMARY KEY AUTOINCREMENT, body TEXT, ts REAL);
         CREATE TABLE IF NOT EXISTS kv(k TEXT PRIMARY KEY, v TEXT);
+        CREATE TABLE IF NOT EXISTS conv(id INTEGER PRIMARY KEY, title TEXT, ts REAL);
+        CREATE TABLE IF NOT EXISTS evo(id INTEGER PRIMARY KEY, ts REAL, summary TEXT, facts TEXT, ver INTEGER);
+        CREATE TABLE IF NOT EXISTS connector(id INTEGER PRIMARY KEY, name TEXT, kind TEXT, url TEXT, method TEXT, headers TEXT, body TEXT);
+        CREATE TABLE IF NOT EXISTS alarm(id TEXT PRIMARY KEY, label TEXT, due REAL, rep INTEGER);
         """)
+        exec("ALTER TABLE msg ADD COLUMN conv INTEGER DEFAULT 0")
+        exec("ALTER TABLE msg ADD COLUMN files TEXT DEFAULT ''")
     }
 
     func exec(_ sql: String) {
@@ -99,11 +110,20 @@ final class DB {
 
 enum Store {
     static var docs: URL { FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0] }
+
     static func dir(_ n: String) -> URL {
         let u = docs.appendingPathComponent(n)
         try? FileManager.default.createDirectory(at: u, withIntermediateDirectories: true)
         return u
     }
+
+    static func rel(_ u: URL) -> String {
+        let base = docs.path + "/"
+        return u.path.hasPrefix(base) ? String(u.path.dropFirst(base.count)) : u.lastPathComponent
+    }
+
+    static func abs(_ r: String) -> URL { docs.appendingPathComponent(r) }
+
     static func copyIn(_ src: URL) -> URL? {
         let ok = src.startAccessingSecurityScopedResource()
         defer { if ok { src.stopAccessingSecurityScopedResource() } }
@@ -111,4 +131,19 @@ enum Store {
         try? FileManager.default.removeItem(at: dst)
         do { try FileManager.default.copyItem(at: src, to: dst); return dst } catch { return nil }
     }
+
+    // 友好的文件名，如「照片 03.08.12.jpg」
+    static func stamped(_ prefix: String, _ ext: String) -> URL {
+        let f = DateFormatter()
+        f.dateFormat = "MMdd HH.mm.ss"
+        return dir("Inbox").appendingPathComponent("\(prefix) \(f.string(from: Date())).\(ext)")
+    }
+}
+
+// 把技术性报错翻成人话
+func friendly(_ s: String) -> String {
+    if s.contains("setTimeout") || s.contains("ReferenceError") { return "脚本用了不支持的功能" }
+    if s.contains("SyntaxError") { return "脚本写法有误" }
+    if s.contains("TypeError") { return "脚本运行出错" }
+    return String(s.prefix(80))
 }
