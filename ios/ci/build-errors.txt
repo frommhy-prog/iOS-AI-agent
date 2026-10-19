@@ -1,6 +1,8 @@
 Xcode 26.6
 Build version 17F113
-/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/Agent.swift:127:30: error: type 'OCR' has no member 'labels'
-/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/Agent.swift:140:25: error: type 'OCR' has no member 'labels'
-/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/Agent.swift:176:21: error: cannot find 'Connectors' in scope
+/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/Views.swift:73:13: error: cannot find 'ChatView' in scope
+/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/Views.swift:74:13: error: cannot find 'KBView' in scope
+/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/Views.swift:75:13: error: cannot find 'ToolboxView' in scope
+/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/Views.swift:76:13: error: cannot find 'TasksView' in scope
+/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/Views.swift:77:13: error: cannot find 'SettingsView' in scope
 RESULT: FAILED

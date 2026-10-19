@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		028F7ABDE61E46B542B37B4B /* Connectors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FEFA9DDDAD17E868ACA8C3D /* Connectors.swift */; };
 		0AC8A978437CD4FE7F9010A7 /* Skills.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89F24A218559D43937FB9D03 /* Skills.swift */; };
 		12FD0B56358C9F5E0AB36C0A /* Inputs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 538B1AE356CDE5429BD0C0FF /* Inputs.swift */; };
 		1C2617D8A34CDF3E7F4EFDCD /* BotActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = C387607AEA72EC82BAB7D840 /* BotActivity.swift */; };
@@ -60,6 +61,7 @@
 		4E7A3B5D3328EA286FF776B2 /* Convert.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Convert.swift; sourceTree = "<group>"; };
 		538B1AE356CDE5429BD0C0FF /* Inputs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Inputs.swift; sourceTree = "<group>"; };
 		5C067C41C430F996A9787706 /* TSTZAgent.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = TSTZAgent.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		5FEFA9DDDAD17E868ACA8C3D /* Connectors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Connectors.swift; sourceTree = "<group>"; };
 		621A2DE7A16D900DCDF95AEB /* Views.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views.swift; sourceTree = "<group>"; };
 		768C409EAE9C5BBFF33875C9 /* Tasks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tasks.swift; sourceTree = "<group>"; };
 		89F24A218559D43937FB9D03 /* Skills.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Skills.swift; sourceTree = "<group>"; };
@@ -88,6 +90,7 @@
 			children = (
 				ACBF423F7B5759B73346F23C /* Agent.swift */,
 				9EA5BECF265FC50BEC0A1A36 /* Assets.xcassets */,
+				5FEFA9DDDAD17E868ACA8C3D /* Connectors.swift */,
 				4E7A3B5D3328EA286FF776B2 /* Convert.swift */,
 				33EBC208AAA0685459A77CA5 /* Core.swift */,
 				538B1AE356CDE5429BD0C0FF /* Inputs.swift */,
@@ -233,6 +236,7 @@
 			files = (
 				866E4E05F73F3EE3D38FA8DD /* Agent.swift in Sources */,
 				1C2617D8A34CDF3E7F4EFDCD /* BotActivity.swift in Sources */,
+				028F7ABDE61E46B542B37B4B /* Connectors.swift in Sources */,
 				C701694EEA0EDC66ECD33E53 /* Convert.swift in Sources */,
 				83240D646233F25E85AFD909 /* Core.swift in Sources */,
 				12FD0B56358C9F5E0AB36C0A /* Inputs.swift in Sources */,
