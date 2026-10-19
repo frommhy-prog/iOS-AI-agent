@@ -15,6 +15,7 @@
 		28A20CDFB92F271ED269FB77 /* Tasks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 768C409EAE9C5BBFF33875C9 /* Tasks.swift */; };
 		2A73D636588FE06443F3389B /* BotActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = C387607AEA72EC82BAB7D840 /* BotActivity.swift */; };
 		322B3BC1D66B1216F50B6750 /* Sys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 212AB59CCC01B37C55962AA5 /* Sys.swift */; };
+		3C05A0D94A27DFFF28B70CE5 /* Live.swift in Sources */ = {isa = PBXBuildFile; fileRef = B22543CF5123098D67A28DBF /* Live.swift */; };
 		47C97D24B171177E5A6C4B71 /* Views.swift in Sources */ = {isa = PBXBuildFile; fileRef = 621A2DE7A16D900DCDF95AEB /* Views.swift */; };
 		57D9239B4518F758C13C07AE /* Intents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E77773F5FB905773A523861 /* Intents.swift */; };
 		7FC7A04B4A9080AB60333E65 /* Tools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05408064C5C05006B3B3FC2B /* Tools.swift */; };
@@ -65,6 +66,7 @@
 		9E77773F5FB905773A523861 /* Intents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Intents.swift; sourceTree = "<group>"; };
 		9EA5BECF265FC50BEC0A1A36 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		ACBF423F7B5759B73346F23C /* Agent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agent.swift; sourceTree = "<group>"; };
+		B22543CF5123098D67A28DBF /* Live.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Live.swift; sourceTree = "<group>"; };
 		C387607AEA72EC82BAB7D840 /* BotActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotActivity.swift; sourceTree = "<group>"; };
 		CA43F639E4E53E643A17976D /* TSTZLive.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = TSTZLive.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		EF218E53F50DB3F539B8391E /* TSTZLive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TSTZLive.swift; sourceTree = "<group>"; };
@@ -91,6 +93,7 @@
 				538B1AE356CDE5429BD0C0FF /* Inputs.swift */,
 				9E77773F5FB905773A523861 /* Intents.swift */,
 				2278739C9AFDEB72BE37F77B /* KB.swift */,
+				B22543CF5123098D67A28DBF /* Live.swift */,
 				079E08E36F2DDC80E544B87F /* Nlp.swift */,
 				89F24A218559D43937FB9D03 /* Skills.swift */,
 				212AB59CCC01B37C55962AA5 /* Sys.swift */,
@@ -235,6 +238,7 @@
 				12FD0B56358C9F5E0AB36C0A /* Inputs.swift in Sources */,
 				57D9239B4518F758C13C07AE /* Intents.swift in Sources */,
 				2405425FCCFE6D2C655F6357 /* KB.swift in Sources */,
+				3C05A0D94A27DFFF28B70CE5 /* Live.swift in Sources */,
 				80DAF64F60138F1BDD58EAE4 /* Nlp.swift in Sources */,
 				0AC8A978437CD4FE7F9010A7 /* Skills.swift in Sources */,
 				322B3BC1D66B1216F50B6750 /* Sys.swift in Sources */,
