@@ -55,11 +55,11 @@ enum Sys {
     }
 
     // rep：0 一次，1 每天，7 每周
-    static func notify(id: String, title: String, body: String, at d: Date, rep: Int = 0) {
+    static func notify(id: String, title: String, body: String, at d: Date, rep: Int = 0, sound: Bool = true) {
         let c = UNMutableNotificationContent()
         c.title = title
         c.body = body
-        c.sound = .default
+        if sound { c.sound = .default }
         let cal = Calendar.current
         let comps: DateComponents
         switch rep {
@@ -78,8 +78,11 @@ enum Sys {
         return [all[min(max(w - 1, 0), 6)]]
     }
 
+    static func systemAlarmCount() -> Int { (try? AlarmManager.shared.alarms)?.count ?? 0 }
+
     static func alarm(_ d: Date, _ label: String, rep: Int = 0) async -> String {
         guard rep > 0 || d > Date() else { return "这个时间已经过了，换一个时间试试。" }
+        await ensureNotif()
         do {
             let mgr = AlarmManager.shared
             if mgr.authorizationState == .notDetermined { _ = try await mgr.requestAuthorization() }
@@ -104,7 +107,9 @@ enum Sys {
             let id = UUID()
             _ = try await mgr.schedule(id: id, configuration: cfg)
             DB.shared.run("INSERT OR REPLACE INTO alarm(id,label,due,rep) VALUES(?,?,?,?)", [id.uuidString, title, d.timeIntervalSince1970, rep])
-            return "闹钟已设置：\(rep > 0 ? repText(rep) + " " : "")\(friendly(d))「\(title)」，到点会响铃。"
+            // 备份：同一时间再发一条无声通知，万一闹钟没响也能看到
+            notify(id: "alarm-\(id.uuidString)", title: "闹钟", body: title, at: d, rep: rep, sound: false)
+            return "闹钟已设置：\(rep > 0 ? repText(rep) + " " : "")\(friendly(d))「\(title)」。到点会响铃，静音和专注模式下也会响。注意：它不会出现在系统「时钟」App 的列表里，请在本 App「任务」页查看。系统当前登记了 \(systemAlarmCount()) 个闹钟。"
         } catch {
             return "闹钟设置失败：\(error.localizedDescription)"
         }
@@ -112,6 +117,7 @@ enum Sys {
 
     static func cancelAlarm(_ id: String) {
         if let u = UUID(uuidString: id) { try? AlarmManager.shared.cancel(id: u) }
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["alarm-\(id)"])
         DB.shared.run("DELETE FROM alarm WHERE id=?", [id])
     }
 
