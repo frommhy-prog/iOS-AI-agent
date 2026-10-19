@@ -1,8 +1,25 @@
 import Foundation
 import JavaScriptCore
+import FoundationModels
 
-// 脚本技能：JS 存库，用系统自带 JavaScriptCore 运行。新增能力不需要重新编译或重签。
+@Generable
+struct SkillDraft {
+    @Guide(description: "技能名，4到8个汉字") var name: String
+    @Guide(description: "一句话用途") var desc: String
+    @Guide(description: "测试用的示例输入，一个简短字符串") var sample: String
+    @Guide(description: "JavaScript 函数源码，形式 function(input){ ... return 字符串; }") var code: String
+}
+
+// 脚本技能：自然语言描述 → 自动生成 → 自动测试运行 → 失败自动修复 → 保存。运行用系统自带的 JavaScriptCore。
 enum Skills {
+    static let rules = """
+    你是 JavaScript 工程师。只写纯 JavaScript（ES5 语法），不要使用 setTimeout、Promise、async、await、require、import、fetch、document、window。
+    代码必须是单个函数表达式：function(input){ ... return 结果字符串; }，input 是用户传入的字符串。
+    只能使用字符串、数组、对象、Math、Date、JSON、正则。
+    需要联网读取网页文字时调用同步函数 fetchText(url)；需要查询知识库时调用 kbSearch(关键词)，返回字符串数组。
+    必须有返回值，返回字符串。不要输出解释。
+    """
+
     static func list() -> [Row] { DB.shared.rows("SELECT name, desc, ts FROM skill ORDER BY ts DESC") }
 
     static func remove(_ name: String) {
@@ -16,11 +33,20 @@ enum Skills {
         KB.shared.upsert("技能:" + name, desc + "（用 run_skill 调用：" + name + "）")
     }
 
-    static func run(_ name: String, _ input: String) -> String {
-        guard let code = DB.shared.rows("SELECT code FROM skill WHERE name=?", [name]).first?.s("code"), !code.isEmpty else { return "技能不存在" }
-        guard let ctx = JSContext() else { return "脚本环境创建失败" }
+    static func clean(_ code: String) -> String {
+        var c = code
+        for f in ["```javascript", "```js", "```JavaScript", "```"] { c = c.replacingOccurrences(of: f, with: "") }
+        c = c.trimmingCharacters(in: .whitespacesAndNewlines)
+        if c.hasSuffix(";") { c.removeLast() }
+        return c
+    }
+
+    // 返回（是否成功，输出或人话报错）
+    static func runCode(_ code: String, _ input: String) -> (Bool, String) {
+        guard let ctx = JSContext() else { return (false, "脚本环境创建失败") }
         var err = ""
         ctx.exceptionHandler = { _, e in err = e?.toString() ?? "" }
+        ctx.evaluateScript("var console={log:function(){},error:function(){}};var setTimeout=function(f){try{f()}catch(e){};return 0};var setInterval=function(){return 0};var window={};")
         let kb: @convention(block) (String) -> [String] = { KB.shared.search($0, k: 3) }
         let get: @convention(block) (String) -> String = { u in
             guard let url = URL(string: u), let d = try? Data(contentsOf: url) else { return "" }
@@ -29,8 +55,41 @@ enum Skills {
         ctx.setObject(kb, forKeyedSubscript: "kbSearch" as NSString)
         ctx.setObject(get, forKeyedSubscript: "fetchText" as NSString)
         ctx.evaluateScript("var skill = (\(code));")
+        if !err.isEmpty { return (false, friendly(err)) }
         let r = ctx.objectForKeyedSubscript("skill")?.call(withArguments: [input])
-        return err.isEmpty ? (r?.toString() ?? "") : "脚本错误：" + err
+        if !err.isEmpty { return (false, friendly(err)) }
+        let out = (r == nil || r!.isUndefined || r!.isNull) ? "" : (r!.toString() ?? "")
+        return out.isEmpty ? (false, "脚本没有返回结果") : (true, out)
+    }
+
+    static func run(_ name: String, _ input: String) -> (Bool, String) {
+        guard let code = DB.shared.rows("SELECT code FROM skill WHERE name=?", [name]).first?.s("code"), !code.isEmpty else { return (false, "没有找到这个技能") }
+        return runCode(code, input)
+    }
+
+    // 创建并运行：最多尝试 3 次，失败时把错误交还给模型修复
+    static func create(_ spec: String, progress: @escaping (String) -> Void) async -> (name: String, ok: Bool, out: String) {
+        var last = ""
+        var err = ""
+        for attempt in 1...3 {
+            progress(attempt == 1 ? "正在编写脚本…" : "正在修复脚本（第 \(attempt) 次尝试）…")
+            let s = LanguageModelSession(instructions: rules)
+            var prompt = "需求：" + spec
+            if attempt > 1 { prompt += "\n上次的代码：\n" + last + "\n运行结果：" + err + "\n请修复后重新输出。" }
+            guard let d = try? await s.respond(to: prompt, generating: SkillDraft.self).content else {
+                err = "模型没有返回内容"
+                continue
+            }
+            last = clean(d.code)
+            progress("正在测试运行…")
+            let (ok, out) = runCode(last, d.sample)
+            if ok {
+                save(d.name, d.desc, last)
+                return (d.name, true, out)
+            }
+            err = out
+        }
+        return ("", false, err)
     }
 
     // 导入电脑上写好的技能包：[{"name","desc","code"}]
