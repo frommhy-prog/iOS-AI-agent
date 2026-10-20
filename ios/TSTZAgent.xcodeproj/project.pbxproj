@@ -18,6 +18,7 @@
 		2A73D636588FE06443F3389B /* BotActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = C387607AEA72EC82BAB7D840 /* BotActivity.swift */; };
 		322B3BC1D66B1216F50B6750 /* Sys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 212AB59CCC01B37C55962AA5 /* Sys.swift */; };
 		3C05A0D94A27DFFF28B70CE5 /* Live.swift in Sources */ = {isa = PBXBuildFile; fileRef = B22543CF5123098D67A28DBF /* Live.swift */; };
+		43DDD5A2A9C74E5284487F8C /* Markdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4973DF07EFF3C7C67DA0C1F /* Markdown.swift */; };
 		47C97D24B171177E5A6C4B71 /* Views.swift in Sources */ = {isa = PBXBuildFile; fileRef = 621A2DE7A16D900DCDF95AEB /* Views.swift */; };
 		5370F2BF1C7ED6D0B4D73107 /* Photo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89CEF7EFD9393FE7C57411B1 /* Photo.swift */; };
 		57D9239B4518F758C13C07AE /* Intents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E77773F5FB905773A523861 /* Intents.swift */; };
@@ -86,6 +87,7 @@
 		BA36910C58D9A68F40346043 /* Brand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Brand.swift; sourceTree = "<group>"; };
 		C0369341F792E658B4665A60 /* ClockBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClockBridge.swift; sourceTree = "<group>"; };
 		C387607AEA72EC82BAB7D840 /* BotActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotActivity.swift; sourceTree = "<group>"; };
+		C4973DF07EFF3C7C67DA0C1F /* Markdown.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Markdown.swift; sourceTree = "<group>"; };
 		CA43F639E4E53E643A17976D /* TSTZLive.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = TSTZLive.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		D1BA3C44ACB60EC914078593 /* Files.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Files.swift; sourceTree = "<group>"; };
 		DFC7844A5E64B339F7DFA507 /* ConnectorUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectorUI.swift; sourceTree = "<group>"; };
@@ -122,6 +124,7 @@
 				9E77773F5FB905773A523861 /* Intents.swift */,
 				2278739C9AFDEB72BE37F77B /* KB.swift */,
 				B22543CF5123098D67A28DBF /* Live.swift */,
+				C4973DF07EFF3C7C67DA0C1F /* Markdown.swift */,
 				079E08E36F2DDC80E544B87F /* Nlp.swift */,
 				438EC194EEB4ADC78229C1DD /* Pages.swift */,
 				89CEF7EFD9393FE7C57411B1 /* Photo.swift */,
@@ -277,6 +280,7 @@
 				57D9239B4518F758C13C07AE /* Intents.swift in Sources */,
 				2405425FCCFE6D2C655F6357 /* KB.swift in Sources */,
 				3C05A0D94A27DFFF28B70CE5 /* Live.swift in Sources */,
+				43DDD5A2A9C74E5284487F8C /* Markdown.swift in Sources */,
 				80DAF64F60138F1BDD58EAE4 /* Nlp.swift in Sources */,
 				E203B621242D87C2CBE3070F /* Pages.swift in Sources */,
 				5370F2BF1C7ED6D0B4D73107 /* Photo.swift in Sources */,
