@@ -21,7 +21,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.Hao-Yi-Miao.TSTZ-Agent
         PRODUCT_NAME: TSTZBot
-        MARKETING_VERSION: "0.3"
+        MARKETING_VERSION: "0.4"
         CURRENT_PROJECT_VERSION: "1"
         TARGETED_DEVICE_FAMILY: "1"
         CODE_SIGN_STYLE: Automatic
@@ -47,6 +47,7 @@ targets:
           - scriptable
         NSMicrophoneUsageDescription: 语音输入需要使用麦克风
         NSSpeechRecognitionUsageDescription: 语音输入需要语音识别
+        NSCameraUsageDescription: 拍照后让助理识别文字或转换格式
         NSPhotoLibraryAddUsageDescription: 保存处理后的图片和视频到相册
         NSCalendarsFullAccessUsageDescription: 助理需要为你添加日程
         NSRemindersFullAccessUsageDescription: 助理需要为你添加提醒事项
@@ -63,7 +64,7 @@ targets:
         PRODUCT_NAME: TSTZLive
         TARGETED_DEVICE_FAMILY: "1"
         CODE_SIGN_STYLE: Automatic
-        MARKETING_VERSION: "0.3"
+        MARKETING_VERSION: "0.4"
         CURRENT_PROJECT_VERSION: "1"
     info:
       path: Config/LiveInfo.plist
