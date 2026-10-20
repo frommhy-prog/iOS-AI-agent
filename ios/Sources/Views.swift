@@ -10,18 +10,20 @@ final class NotifDelegate: NSObject, UNUserNotificationCenterDelegate {
     }
 }
 
-final class AppState: ObservableObject {
-    static let shared = AppState()
-    @Published var tab = 0
-}
-
 @main
 struct TSTZBotApp: App {
     @Environment(\.scenePhase) private var phase
     @AppStorage("appearance") private var appearance = 0
-    @AppStorage("accent") private var accent = 0
 
-    init() { UNUserNotificationCenter.current().delegate = NotifDelegate.shared }
+    init() {
+        UNUserNotificationCenter.current().delegate = NotifDelegate.shared
+        // 主题只保留「跟随系统 / 浅色 / 深色」，升级后默认恢复为跟随系统
+        let ud = UserDefaults.standard
+        if !ud.bool(forKey: "themeReset05") {
+            ud.set(0, forKey: "appearance")
+            ud.set(true, forKey: "themeReset05")
+        }
+    }
 
     private var scheme: ColorScheme? {
         switch appearance {
@@ -35,7 +37,7 @@ struct TSTZBotApp: App {
         WindowGroup {
             RootView()
                 .preferredColorScheme(scheme)
-                .tint(Theme.accent(accent))
+                .tint(Brand.accent)
                 .onOpenURL { URLRouter.handle($0) }
         }
         .onChange(of: phase) { _, p in
@@ -51,10 +53,11 @@ enum URLRouter {
         guard url.scheme == "tstzbot" else { return }
         var q: [String: String] = [:]
         for i in URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? [] { q[i.name] = i.value ?? "" }
+        AppState.shared.drawer = false
+        AppState.shared.page = nil
         switch url.host {
         case "ask":
-            AppState.shared.tab = 0
-            Task { await Agent.shared.send(q["q"] ?? "") }
+            Agent.shared.start(q["q"] ?? "")
         case "run":
             let out = Skills.run(q["name"] ?? "", q["input"] ?? "").1
             if let s = q["x-success"], var c = URLComponents(string: s) {
@@ -62,26 +65,11 @@ enum URLRouter {
                 if let u = c.url { Task { await UIApplication.shared.open(u) } }
             }
         case "clock":
-            AppState.shared.tab = 0
             ClockBridge.callback(q)
         case "connector":
-            AppState.shared.tab = 0
             Connectors.callback(q)
         default:
             break
-        }
-    }
-}
-
-struct RootView: View {
-    @ObservedObject var state = AppState.shared
-    var body: some View {
-        TabView(selection: $state.tab) {
-            ChatView().tabItem { Label("对话", systemImage: "bubble.left.and.bubble.right.fill") }.tag(0)
-            KBView().tabItem { Label("知识库", systemImage: "books.vertical.fill") }.tag(1)
-            ToolboxView().tabItem { Label("工具箱", systemImage: "square.grid.2x2.fill") }.tag(2)
-            TasksView().tabItem { Label("任务", systemImage: "clock.badge.checkmark.fill") }.tag(3)
-            SettingsView().tabItem { Label("设置", systemImage: "gearshape.fill") }.tag(4)
         }
     }
 }
@@ -150,10 +138,10 @@ struct FileCard: View {
                 }
             }
             HStack(spacing: 10) {
-                Image(systemName: kind.0).font(.title3).foregroundStyle(Color.accentColor)
+                Image(systemName: kind.0).font(.title3).foregroundStyle(Brand.accent)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(kind.1).font(.subheadline.weight(.medium))
-                    Text(sizeText).font(.footnote).foregroundStyle(.secondary)
+                    Text(kind.1).font(.subheadline.weight(.medium)).foregroundStyle(Brand.ink)
+                    Text(sizeText).font(.footnote).foregroundStyle(Brand.sub)
                 }
                 Spacer(minLength: 12)
                 Button { preview = url } label: { Image(systemName: "eye") }
@@ -161,8 +149,9 @@ struct FileCard: View {
             }
         }
         .padding(12)
-        .background(Color(.secondarySystemGroupedBackground))
+        .background(Brand.card)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Brand.line, lineWidth: 1))
         .frame(maxWidth: 300, alignment: .leading)
     }
 }
