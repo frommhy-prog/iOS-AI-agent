@@ -25,28 +25,37 @@ enum Files {
         let stamp = (try? u.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate)?.timeIntervalSince1970 ?? 0
         let key = "\(u.path)|\(Int(px))|\(stamp)" as NSString
         if let c = cache.object(forKey: key) { return c }
-        guard let s = CGImageSourceCreateWithURL(u as CFURL, nil) else { return nil }
-        let opts: [CFString: Any] = [
-            kCGImageSourceCreateThumbnailFromImageAlways: true,
-            kCGImageSourceCreateThumbnailWithTransform: true,
-            kCGImageSourceThumbnailMaxPixelSize: px
-        ]
-        guard let cg = CGImageSourceCreateThumbnailAtIndex(s, 0, opts as CFDictionary) else { return nil }
-        let img = UIImage(cgImage: cg)
-        cache.setObject(img, forKey: key)
-        return img
+        var img: UIImage?
+        if let s = CGImageSourceCreateWithURL(u as CFURL, nil) {
+            let opts: [CFString: Any] = [
+                kCGImageSourceCreateThumbnailFromImageAlways: true,
+                kCGImageSourceCreateThumbnailWithTransform: true,
+                kCGImageSourceThumbnailMaxPixelSize: Int(px)
+            ]
+            if let cg = CGImageSourceCreateThumbnailAtIndex(s, 0, opts as CFDictionary) { img = UIImage(cgImage: cg) }
+        }
+        if img == nil { img = UIImage(contentsOfFile: u.path) }
+        guard let out = img else { return nil }
+        cache.setObject(out, forKey: key)
+        return out
     }
 
     // 转成方向正确、长边不超过 maxPixel 的 JPEG（HEIC、竖拍、超大图都能稳定读取，识别文字不会躺倒）
-    static func normalizedJPEG(from src: URL, maxPixel: CGFloat = 3072) -> Data? {
-        guard let s = CGImageSourceCreateWithURL(src as CFURL, nil) else { return nil }
-        let opts: [CFString: Any] = [
-            kCGImageSourceCreateThumbnailFromImageAlways: true,
-            kCGImageSourceCreateThumbnailWithTransform: true,
-            kCGImageSourceThumbnailMaxPixelSize: maxPixel
-        ]
-        guard let cg = CGImageSourceCreateThumbnailAtIndex(s, 0, opts as CFDictionary) else { return nil }
-        return UIImage(cgImage: cg).jpegData(compressionQuality: 0.92)
+    // 三层兜底：ImageIO 缩略图 → UIImage 文件解码 → 原始数据解码
+    static func normalizedJPEG(from src: URL, maxPixel: Int = 3072) -> Data? {
+        if let s = CGImageSourceCreateWithURL(src as CFURL, nil) {
+            let opts: [CFString: Any] = [
+                kCGImageSourceCreateThumbnailFromImageAlways: true,
+                kCGImageSourceCreateThumbnailWithTransform: true,
+                kCGImageSourceShouldCacheImmediately: true,
+                kCGImageSourceThumbnailMaxPixelSize: maxPixel
+            ]
+            if let cg = CGImageSourceCreateThumbnailAtIndex(s, 0, opts as CFDictionary),
+               let d = UIImage(cgImage: cg).jpegData(compressionQuality: 0.92) { return d }
+        }
+        if let ui = UIImage(contentsOfFile: src.path), let d = ui.jpegData(compressionQuality: 0.92) { return d }
+        if let raw = try? Data(contentsOf: src), let ui = UIImage(data: raw), let d = ui.jpegData(compressionQuality: 0.92) { return d }
+        return nil
     }
 
     // 从「文件」App 导入：协调读取（会触发 iCloud 下载），并校验文件非空、图片可打开
