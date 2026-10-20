@@ -32,6 +32,7 @@
 		C701694EEA0EDC66ECD33E53 /* Convert.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E7A3B5D3328EA286FF776B2 /* Convert.swift */; };
 		E203B621242D87C2CBE3070F /* Pages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 438EC194EEB4ADC78229C1DD /* Pages.swift */; };
 		E962B3E9E6122F26D1531F94 /* Files.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1BA3C44ACB60EC914078593 /* Files.swift */; };
+		ECE0C5E129E53DCC66F3DC05 /* Brand.swift in Sources */ = {isa = PBXBuildFile; fileRef = BA36910C58D9A68F40346043 /* Brand.swift */; };
 		ED731F7ADB35979D4DA8C2CD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9EA5BECF265FC50BEC0A1A36 /* Assets.xcassets */; };
 		F45147947B696853CF72B09A /* AgentExt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B43629F12F1F786BC2B18A7 /* AgentExt.swift */; };
 /* End PBXBuildFile section */
@@ -82,6 +83,7 @@
 		9EA5BECF265FC50BEC0A1A36 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		ACBF423F7B5759B73346F23C /* Agent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agent.swift; sourceTree = "<group>"; };
 		B22543CF5123098D67A28DBF /* Live.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Live.swift; sourceTree = "<group>"; };
+		BA36910C58D9A68F40346043 /* Brand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Brand.swift; sourceTree = "<group>"; };
 		C0369341F792E658B4665A60 /* ClockBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClockBridge.swift; sourceTree = "<group>"; };
 		C387607AEA72EC82BAB7D840 /* BotActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotActivity.swift; sourceTree = "<group>"; };
 		CA43F639E4E53E643A17976D /* TSTZLive.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = TSTZLive.appex; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -107,6 +109,7 @@
 				ACBF423F7B5759B73346F23C /* Agent.swift */,
 				9B43629F12F1F786BC2B18A7 /* AgentExt.swift */,
 				9EA5BECF265FC50BEC0A1A36 /* Assets.xcassets */,
+				BA36910C58D9A68F40346043 /* Brand.swift */,
 				8B40865156B8A5F8C6B5531E /* ChatParts.swift */,
 				36A68829C20696DA27AB54ED /* ChatViews.swift */,
 				C0369341F792E658B4665A60 /* ClockBridge.swift */,
@@ -261,6 +264,7 @@
 				866E4E05F73F3EE3D38FA8DD /* Agent.swift in Sources */,
 				F45147947B696853CF72B09A /* AgentExt.swift in Sources */,
 				1C2617D8A34CDF3E7F4EFDCD /* BotActivity.swift in Sources */,
+				ECE0C5E129E53DCC66F3DC05 /* Brand.swift in Sources */,
 				BD38BC0DDF0B1AA2288B9843 /* ChatParts.swift in Sources */,
 				08776F9C60355FC2E91449BE /* ChatViews.swift in Sources */,
 				AB67C8F4DFB72C8EED4C6C2E /* ClockBridge.swift in Sources */,
