@@ -2,16 +2,16 @@ import SwiftUI
 import QuickLook
 import UniformTypeIdentifiers
 
-// MARK: 对话页
+// MARK: 对话页（排版参照 Claude：顶部菜单与新对话，回答直接排在页面上，底部圆角输入卡片）
 struct ChatView: View {
     @ObservedObject var agent = Agent.shared
+    @ObservedObject var state = AppState.shared
     @StateObject private var voice = Voice()
     @AppStorage("autoSend") private var autoSend = false
     @State private var input = ""
     @State private var showPhoto = false
     @State private var showCamera = false
     @State private var showFile = false
-    @State private var showHistory = false
     @State private var showShare = false
     @State private var showClock = false
     @State private var showConnectors = false
@@ -28,148 +28,184 @@ struct ChatView: View {
         ("arrow.triangle.2.circlepath", "把图片转成 PDF")
     ]
 
-    var body: some View {
-        NavigationStack {
-            ScrollViewReader { proxy in
-                ScrollView {
-                    if agent.msgs.isEmpty { emptyState }
-                    LazyVStack(spacing: 14) {
-                        ForEach(agent.msgs) { MsgRow(m: $0, preview: $preview) }
-                        if agent.busy {
-                            HStack(spacing: 8) {
-                                ProgressView()
-                                Text("思考中…").foregroundStyle(.secondary)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        Color.clear.frame(height: 1).id("end")
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.top, 8)
-                }
-                .scrollDismissesKeyboard(.interactively)
-                .background(Color(.systemGroupedBackground))
-                .onChange(of: agent.msgs.count) { _, _ in withAnimation { proxy.scrollTo("end", anchor: .bottom) } }
-                .onChange(of: agent.busy) { _, _ in withAnimation { proxy.scrollTo("end", anchor: .bottom) } }
-            }
-            .safeAreaInset(edge: .bottom) { inputBar }
-            .navigationTitle("TSTZ Bot")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button { showHistory = true } label: { Image(systemName: "clock.arrow.circlepath") }
-                }
-                ToolbarItemGroup(placement: .topBarTrailing) {
-                    Button { showShare = true } label: { Image(systemName: "square.and.arrow.up") }
-                        .disabled(agent.msgs.isEmpty)
-                    Button { agent.newChat() } label: { Image(systemName: "square.and.pencil") }
-                }
-                ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
-                    Button("完成") { focus = false }
-                }
-            }
-            .sheet(isPresented: $showHistory) { HistoryView() }
-            .sheet(isPresented: $showShare) { ShareView() }
-            .sheet(isPresented: $showClock) { ClockSetupView() }
-            .sheet(isPresented: $showConnectors, onDismiss: { conns = Connectors.all() }) {
-                ConnectorHub { activeConn = $0.s("name") }
-            }
-            .sheet(isPresented: $showPhoto) {
-                PhotoPicker(onPick: { urls in
-                    showPhoto = false
-                    for u in urls { agent.attachments.append(Attach(url: u)) }
-                }, onError: { warn($0) })
-                .ignoresSafeArea()
-            }
-            .fullScreenCover(isPresented: $showCamera) {
-                CameraPicker { u in
-                    showCamera = false
-                    if let u { agent.attachments.append(Attach(url: u)) }
-                }
-                .ignoresSafeArea()
-            }
-            .fileImporter(isPresented: $showFile, allowedContentTypes: [.item], allowsMultipleSelection: true) { r in
-                switch r {
-                case .success(let urls):
-                    for u in urls {
-                        let res = Files.importFile(u)
-                        if let c = res.url { agent.attachments.append(Attach(url: c)) }
-                        else if let e = res.error { warn(e) }
-                    }
-                case .failure(let e):
-                    warn("无法打开文件：\(e.localizedDescription)")
-                }
-            }
-            .quickLookPreview($preview)
-            .onAppear {
-                conns = Connectors.all()
-                voice.onText = { input = $0 }
-                voice.onFinished = { t in if autoSend && !t.isEmpty { send() } }
-            }
+    private var greeting: String {
+        let h = Calendar.current.component(.hour, from: Date())
+        switch h {
+        case 5..<11: return "早上好"
+        case 11..<14: return "中午好"
+        case 14..<18: return "下午好"
+        default: return "晚上好"
         }
     }
 
-    // MARK: 空状态
+    private var title: String {
+        if let t = agent.msgs.first(where: { $0.role == "user" })?.text, !t.isEmpty { return String(t.prefix(14)) }
+        return "TSTZ Bot"
+    }
+
+    var body: some View {
+        NavigationStack {
+            messageList
+                .background(Brand.bg)
+                .safeAreaInset(edge: .bottom, spacing: 0) { inputBar }
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbarBackground(Brand.bg, for: .navigationBar)
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button {
+                            hideKeyboard()
+                            state.drawer = true
+                        } label: { Image(systemName: "line.3.horizontal").foregroundStyle(Brand.ink) }
+                    }
+                    ToolbarItem(placement: .principal) {
+                        Text(title).font(.system(size: 17, weight: .semibold, design: .serif)).foregroundStyle(Brand.ink).lineLimit(1)
+                    }
+                    ToolbarItemGroup(placement: .topBarTrailing) {
+                        Button { showShare = true } label: { Image(systemName: "square.and.arrow.up").foregroundStyle(Brand.ink) }
+                            .disabled(agent.msgs.isEmpty)
+                        Button { agent.newChat() } label: { Image(systemName: "square.and.pencil").foregroundStyle(Brand.ink) }
+                    }
+                }
+                .sheet(isPresented: $showShare) { ShareView() }
+                .sheet(isPresented: $showClock) { ClockSetupView().presentationBackground(Brand.bg) }
+                .sheet(isPresented: $showConnectors, onDismiss: { conns = Connectors.all() }) {
+                    ConnectorHub { activeConn = $0.s("name") }.presentationBackground(Brand.bg)
+                }
+                .sheet(isPresented: $showPhoto) {
+                    PhotoPicker(onPick: { urls in
+                        showPhoto = false
+                        for u in urls { agent.attachments.append(Attach(url: u)) }
+                    }, onError: { warn($0) })
+                    .ignoresSafeArea()
+                }
+                .fullScreenCover(isPresented: $showCamera) {
+                    CameraPicker { u in
+                        showCamera = false
+                        if let u { agent.attachments.append(Attach(url: u)) }
+                    }
+                    .ignoresSafeArea()
+                }
+                .fileImporter(isPresented: $showFile, allowedContentTypes: [.item], allowsMultipleSelection: true) { r in
+                    switch r {
+                    case .success(let urls):
+                        for u in urls {
+                            let res = Files.importFile(u)
+                            if let c = res.url { agent.attachments.append(Attach(url: c)) } else if let e = res.error { warn(e) }
+                        }
+                    case .failure(let e):
+                        warn("无法打开文件：\(e.localizedDescription)")
+                    }
+                }
+                .quickLookPreview($preview)
+                .onAppear {
+                    conns = Connectors.all()
+                    voice.onText = { input = $0 }
+                    voice.onFinished = { t in if autoSend && !t.isEmpty { send() } }
+                }
+        }
+    }
+
+    // MARK: 消息列表
+    var messageList: some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                if agent.msgs.isEmpty { emptyState }
+                LazyVStack(alignment: .leading, spacing: 24) {
+                    ForEach(agent.msgs) { m in
+                        MessageView(m: m, isLast: m.id == agent.msgs.last?.id, preview: $preview, onRegenerate: { agent.regenerate() })
+                    }
+                    Color.clear.frame(height: 1).id("end")
+                }
+                .padding(.horizontal, 18)
+                .padding(.top, 8)
+                .padding(.bottom, 12)
+            }
+            .scrollDismissesKeyboard(.interactively)
+            .onChange(of: agent.msgs.count) { _, _ in proxy.scrollTo("end", anchor: .bottom) }
+            .onChange(of: agent.msgs.last?.text) { _, _ in proxy.scrollTo("end", anchor: .bottom) }
+        }
+    }
+
     var emptyState: some View {
-        VStack(spacing: 14) {
-            LogoMark(size: 76).padding(.top, 36)
-            Text("你好，我是 TSTZ Bot").font(.title2.bold())
-            Text("说出你想做的事，我来帮你完成").foregroundStyle(.secondary)
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+        VStack(alignment: .leading, spacing: 16) {
+            Image(systemName: "sparkle").font(.system(size: 34)).foregroundStyle(Brand.accent).padding(.top, 40)
+            Text("\(greeting)，我是 TSTZ Bot")
+                .font(.system(size: 30, weight: .regular, design: .serif))
+                .foregroundStyle(Brand.ink)
+            Text("闹钟、提醒、文件转换、识别图片文字，都可以直接说。")
+                .font(Brand.serif)
+                .foregroundStyle(Brand.sub)
+            VStack(spacing: 10) {
                 ForEach(ideas, id: \.1) { idea in
                     Button {
                         input = idea.1
                         focus = true
                     } label: {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Image(systemName: idea.0).font(.title3).foregroundStyle(Color.accentColor)
-                            Text(idea.1).font(.subheadline).foregroundStyle(.primary).multilineTextAlignment(.leading)
+                        HStack(spacing: 12) {
+                            Image(systemName: idea.0).foregroundStyle(Brand.accent).frame(width: 24)
+                            Text(idea.1).foregroundStyle(Brand.ink)
+                            Spacer()
                         }
-                        .frame(maxWidth: .infinity, minHeight: 84, alignment: .topLeading)
                         .padding(14)
-                        .background(Color(.secondarySystemGroupedBackground))
+                        .background(Brand.card)
                         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Brand.line, lineWidth: 1))
                     }
                 }
             }
             .padding(.top, 8)
         }
-        .padding(.bottom, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 18)
     }
 
-    // MARK: 输入区
+    // MARK: 输入卡片
     var inputBar: some View {
-        VStack(spacing: 8) {
-            if !voice.error.isEmpty {
-                Text(voice.error).font(.footnote).foregroundStyle(.red).frame(maxWidth: .infinity, alignment: .leading)
-            }
-            if !notice.isEmpty {
-                Text(notice).font(.footnote).foregroundStyle(.red).frame(maxWidth: .infinity, alignment: .leading)
-            }
+        VStack(alignment: .leading, spacing: 10) {
+            if !voice.error.isEmpty { Text(voice.error).font(.footnote).foregroundStyle(.red) }
+            if !notice.isEmpty { Text(notice).font(.footnote).foregroundStyle(.red) }
             if !activeConn.isEmpty { connChip }
             if !agent.attachments.isEmpty { attachmentRow }
-            if voice.listening { listeningBar } else { typeBar }
+            if voice.listening {
+                listeningBar
+            } else {
+                TextField(activeConn.isEmpty ? "发消息给 TSTZ Bot" : "发给「\(activeConn)」的内容", text: $input, axis: .vertical)
+                    .lineLimit(1...6)
+                    .focused($focus)
+                    .font(.system(size: 17))
+                    .foregroundStyle(Brand.ink)
+                HStack(spacing: 10) {
+                    plusMenu
+                    Spacer()
+                    actionButton
+                }
+            }
         }
+        .padding(14)
+        .background(Brand.card)
+        .clipShape(RoundedRectangle(cornerRadius: 26, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 26, style: .continuous).stroke(Brand.line, lineWidth: 1))
+        .shadow(color: .black.opacity(0.06), radius: 10, y: 2)
         .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .background(.bar)
+        .padding(.top, 6)
+        .padding(.bottom, 8)
+        .background(Brand.bg)
     }
 
     // 当前选中的连接器：之后发送的内容都会交给它，点 × 退出
     var connChip: some View {
         HStack(spacing: 8) {
-            Image(systemName: "link").foregroundStyle(Color.accentColor)
-            Text(activeConn).font(.subheadline.weight(.medium))
+            Image(systemName: "link").foregroundStyle(Brand.accent)
+            Text(activeConn).font(.subheadline.weight(.medium)).foregroundStyle(Brand.ink)
             let h = Connectors.hint(activeConn)
-            if !h.isEmpty { Text(h).font(.footnote).foregroundStyle(.secondary).lineLimit(1) }
+            if !h.isEmpty { Text(h).font(.footnote).foregroundStyle(Brand.sub).lineLimit(1) }
             Spacer()
-            Button { activeConn = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary) }
+            Button { activeConn = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(Brand.sub) }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(Color.accentColor.opacity(0.14))
-        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(Brand.accent.opacity(0.14))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     var plusMenu: some View {
@@ -191,64 +227,55 @@ struct ChatView: View {
             Button { showFile = true } label: { Label("文件", systemImage: "paperclip") }
             Button { paste() } label: { Label("粘贴", systemImage: "doc.on.clipboard") }
         } label: {
-            Image(systemName: activeConn.isEmpty ? "plus" : "link").font(.title3.weight(.semibold))
-                .frame(width: 40, height: 40)
-                .background(Color(.tertiarySystemFill))
-                .clipShape(Circle())
+            Image(systemName: activeConn.isEmpty ? "plus" : "link")
+                .font(.system(size: 17, weight: .medium))
+                .foregroundStyle(Brand.ink)
+                .frame(width: 36, height: 36)
+                .overlay(Circle().stroke(Brand.line, lineWidth: 1))
         }
     }
 
-    var typeBar: some View {
-        HStack(alignment: .bottom, spacing: 10) {
-            plusMenu
-            TextField(activeConn.isEmpty ? "发消息给 TSTZ Bot" : "发给「\(activeConn)」的内容", text: $input, axis: .vertical)
-                .lineLimit(1...5)
-                .focused($focus)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .background(Color(.secondarySystemGroupedBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-            actionButton
-        }
-    }
-
+    // 空 → 语音；有内容 → 发送；生成中 → 停止
     var actionButton: some View {
         let empty = input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && agent.attachments.isEmpty
         return Button {
-            if empty { focus = false; voice.start() } else { send() }
+            if agent.busy {
+                agent.stop()
+            } else if empty {
+                focus = false
+                voice.start()
+            } else {
+                send()
+            }
         } label: {
-            Image(systemName: empty ? "mic.fill" : "arrow.up")
-                .font(.headline)
+            Image(systemName: agent.busy ? "stop.fill" : (empty ? "mic.fill" : "arrow.up"))
+                .font(.system(size: 16, weight: .semibold))
                 .foregroundStyle(.white)
-                .frame(width: 40, height: 40)
-                .background(Color.accentColor)
+                .frame(width: 36, height: 36)
+                .background(Brand.accent)
                 .clipShape(Circle())
         }
-        .disabled(agent.busy && !empty)
     }
 
     var listeningBar: some View {
         HStack(spacing: 12) {
             HStack(spacing: 3) {
                 ForEach(0..<14, id: \.self) { i in
-                    Capsule().fill(Color.accentColor)
+                    Capsule().fill(Brand.accent)
                         .frame(width: 3, height: 8 + voice.level * 22 * CGFloat(abs(sin(Double(i) * 0.9))))
                 }
             }
             .frame(height: 34)
             .animation(.easeOut(duration: 0.1), value: voice.level)
             Text(voice.live.isEmpty ? "正在聆听，说完点右边按钮" : voice.live)
+                .foregroundStyle(Brand.ink)
                 .lineLimit(2)
                 .frame(maxWidth: .infinity, alignment: .leading)
             Button { voice.stop() } label: {
-                Image(systemName: "checkmark").font(.headline).foregroundStyle(.white)
-                    .frame(width: 40, height: 40).background(Color.accentColor).clipShape(Circle())
+                Image(systemName: "checkmark").font(.system(size: 16, weight: .semibold)).foregroundStyle(.white)
+                    .frame(width: 36, height: 36).background(Brand.accent).clipShape(Circle())
             }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
-        .background(Color(.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
     }
 
     var attachmentRow: some View {
@@ -287,21 +314,25 @@ struct ChatView: View {
             } else if Files.isImage(u) {
                 Image(systemName: "exclamationmark.triangle").font(.title2).foregroundStyle(.red)
             } else {
-                Image(systemName: "doc").font(.title2).foregroundStyle(Color.accentColor)
+                Image(systemName: "doc").font(.title2).foregroundStyle(Brand.accent)
             }
         }
         .frame(width: 60, height: 60)
-        .background(Color(.tertiarySystemFill))
+        .background(Brand.userBubble)
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     func chip(_ t: String) -> some View {
-        Button(t) { input = t; send() }
-            .font(.subheadline)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
-            .background(Color.accentColor.opacity(0.14))
-            .clipShape(Capsule())
+        Button(t) {
+            input = t
+            send()
+        }
+        .font(.subheadline)
+        .foregroundStyle(Brand.ink)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(Brand.userBubble)
+        .clipShape(Capsule())
     }
 
     // MARK: 发送：识别文字 → 当前连接器 → 「用 XX 查 YY」→ 普通对话
@@ -327,13 +358,13 @@ struct ChatView: View {
                 return
             }
         }
-        Task { await agent.send(t) }
+        agent.start(t)
     }
 
     func warn(_ s: String) {
         notice = s
         Task {
-            try? await Task.sleep(nanoseconds: 6_000_000_000)
+            try? await Task.sleep(nanoseconds: 8_000_000_000)
             if notice == s { notice = "" }
         }
     }
