@@ -80,39 +80,84 @@ enum Sys {
 
     static func systemAlarmCount() -> Int { (try? AlarmManager.shared.alarms)?.count ?? 0 }
 
-    static func alarm(_ d: Date, _ label: String, rep: Int = 0) async -> String {
+    static func alarmAuth() -> String {
+        switch AlarmManager.shared.authorizationState {
+        case .authorized: return "已允许"
+        case .denied: return "已拒绝（请到 设置 → TSTZ Bot 开启闹钟）"
+        default: return "还没询问"
+        }
+    }
+
+    // 闹钟分两层：① 内置闹钟（AlarmKit，真正响铃，静音与专注模式下也响，但不在「时钟」列表里）
+    // ② 系统「时钟」写入（经快捷指令「创建闹钟」，需连接一次）。② 成功后自动取消 ① 的备份，避免重复响。
+    static func alarm(_ d: Date, _ label: String, rep: Int = 0, builtinOnly: Bool = false) async -> String {
         guard rep > 0 || d > Date() else { return "这个时间已经过了，换一个时间试试。" }
         await ensureNotif()
+        let title = label.isEmpty ? "闹钟" : label
+        let when = (rep > 0 ? repText(rep) + " " : "") + friendly(d)
+        let id = UUID()
+        var kitOK = false
+        var kitErr = ""
         do {
             let mgr = AlarmManager.shared
             if mgr.authorizationState == .notDetermined { _ = try await mgr.requestAuthorization() }
-            guard mgr.authorizationState == .authorized else { return "没有闹钟权限，请到 设置 → TSTZ Bot 里允许闹钟。" }
-            let title = label.isEmpty ? "闹钟" : label
-            let alert = AlarmPresentation.Alert(
-                title: LocalizedStringResource(stringLiteral: title),
-                stopButton: AlarmButton(text: "停止", textColor: .white, systemImageName: "stop.fill")
-            )
-            let attrs = AlarmAttributes<NoMeta>(presentation: AlarmPresentation(alert: alert), tintColor: .green)
-            let schedule: Alarm.Schedule
-            if rep > 0 {
-                let c = Calendar.current.dateComponents([.hour, .minute], from: d)
-                schedule = .relative(Alarm.Schedule.Relative(
-                    time: Alarm.Schedule.Relative.Time(hour: c.hour ?? 8, minute: c.minute ?? 0),
-                    repeats: .weekly(weekdays(rep, d))
-                ))
+            if mgr.authorizationState == .authorized {
+                let alert = AlarmPresentation.Alert(
+                    title: LocalizedStringResource(stringLiteral: title),
+                    stopButton: AlarmButton(text: "停止", textColor: .white, systemImageName: "stop.fill")
+                )
+                let attrs = AlarmAttributes<NoMeta>(presentation: AlarmPresentation(alert: alert), tintColor: .green)
+                let schedule: Alarm.Schedule
+                if rep > 0 {
+                    let c = Calendar.current.dateComponents([.hour, .minute], from: d)
+                    schedule = .relative(Alarm.Schedule.Relative(
+                        time: Alarm.Schedule.Relative.Time(hour: c.hour ?? 8, minute: c.minute ?? 0),
+                        repeats: .weekly(weekdays(rep, d))
+                    ))
+                } else {
+                    schedule = .fixed(d)
+                }
+                let cfg = AlarmManager.AlarmConfiguration.alarm(schedule: schedule, attributes: attrs)
+                _ = try await mgr.schedule(id: id, configuration: cfg)
+                // 回查：确认系统真的登记了这个闹钟
+                kitOK = ((try? mgr.alarms) ?? []).contains { $0.id == id }
+                if !kitOK { kitErr = "系统没有登记这个闹钟" }
             } else {
-                schedule = .fixed(d)
+                kitErr = "没有闹钟权限，请到 设置 → TSTZ Bot 里允许闹钟"
             }
-            let cfg = AlarmManager.AlarmConfiguration.alarm(schedule: schedule, attributes: attrs)
-            let id = UUID()
-            _ = try await mgr.schedule(id: id, configuration: cfg)
-            DB.shared.run("INSERT OR REPLACE INTO alarm(id,label,due,rep) VALUES(?,?,?,?)", [id.uuidString, title, d.timeIntervalSince1970, rep])
-            // 备份：同一时间再发一条无声通知，万一闹钟没响也能看到
-            notify(id: "alarm-\(id.uuidString)", title: "闹钟", body: title, at: d, rep: rep, sound: false)
-            return "闹钟已设置：\(rep > 0 ? repText(rep) + " " : "")\(friendly(d))「\(title)」。到点会响铃，静音和专注模式下也会响。注意：它不会出现在系统「时钟」App 的列表里，请在本 App「任务」页查看。系统当前登记了 \(systemAlarmCount()) 个闹钟。"
         } catch {
-            return "闹钟设置失败：\(error.localizedDescription)"
+            kitErr = error.localizedDescription
         }
+        DB.shared.run("INSERT OR REPLACE INTO alarm(id,label,due,rep) VALUES(?,?,?,?)",
+                      [id.uuidString, kitOK ? title : title + "（仅通知）", d.timeIntervalSince1970, rep])
+        // 通知保底：内置闹钟成功时无声（只在锁屏留痕）；失败时带声音，但它只是通知
+        notify(id: "alarm-\(id.uuidString)", title: "闹钟", body: title, at: d, rep: rep, sound: !kitOK)
+
+        var clockStarted = false
+        if !builtinOnly && ClockBridge.eligible(d, rep) {
+            clockStarted = await ClockBridge.run(daily: rep == 1, at: d, alarmId: id.uuidString, test: false)
+        }
+
+        if kitOK {
+            var s = "闹钟已设置：\(when)「\(title)」。到点会像系统闹钟一样响铃，静音和专注模式下也会响。"
+            if clockStarted {
+                s += "正在写入系统「时钟」，完成后会提示。"
+            } else if !builtinOnly && ClockBridge.mode != 1 && ClockBridge.supports(d, rep) && !ClockBridge.ready(daily: rep == 1) && ClockBridge.bumpHint() {
+                s += "它不在「时钟」App 的列表里；点输入框左边「+」→「系统时钟闹钟」连接一次，以后就会写进时钟。"
+            }
+            return s
+        }
+        if clockStarted {
+            return "闹钟已设置：\(when)「\(title)」。内置闹钟不可用（\(kitErr)），已改为写入系统「时钟」，完成后会提示。"
+        }
+        return "闹钟没能设置成响铃：\(kitErr)。已先用通知提醒你，到点只会弹通知、不会响铃。"
+    }
+
+    // 写入「时钟」成功后，取消内置备份，避免同一时间响两次
+    static func dropBackup(_ id: String, note: String) {
+        if let u = UUID(uuidString: id) { try? AlarmManager.shared.cancel(id: u) }
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["alarm-\(id)"])
+        DB.shared.run("UPDATE alarm SET label=label||? WHERE id=?", ["（已写入\(note)）", id])
     }
 
     static func cancelAlarm(_ id: String) {
@@ -139,7 +184,8 @@ enum Sys {
                 inReminders = true
             }
         } catch {}
-        Sys.notify(id: "remind-\(UUID().uuidString)", title: "提醒", body: title, at: d, rep: rep)
+        // 已写入系统提醒事项时由它负责提醒，不再重复发通知
+        if !inReminders { Sys.notify(id: "remind-\(UUID().uuidString)", title: "提醒", body: title, at: d, rep: rep) }
         return "提醒已设置：\(rep > 0 ? repText(rep) + " " : "")\(friendly(d))「\(title)」" + (inReminders ? "，已写入系统提醒事项。" : "，将以通知提醒你。")
     }
 
