@@ -1,0 +1,75 @@
+import Foundation
+import UIKit
+import ImageIO
+
+// 文件与图片的稳健读取：校验、缩略图、文件大小、从「文件」App 导入
+enum Files {
+    // 文件大小（字节）；读不到返回 nil，不再误显示 0
+    static func size(_ u: URL) -> Int64? {
+        guard let n = try? u.resourceValues(forKeys: [.fileSizeKey]).fileSize else { return nil }
+        return Int64(n)
+    }
+
+    static func isImage(_ u: URL) -> Bool { Convert.imgExt.contains(u.pathExtension.lowercased()) }
+
+    // 系统能否把它解码成图片（按内容判断，不看扩展名）
+    static func readable(_ u: URL) -> Bool {
+        guard let s = CGImageSourceCreateWithURL(u as CFURL, nil) else { return false }
+        return CGImageSourceGetCount(s) > 0
+    }
+
+    private static let cache = NSCache<NSString, UIImage>()
+
+    // 缩略图：按长边缩放并带缓存，界面刷新时不再反复解码大图
+    static func thumb(_ u: URL, max px: CGFloat = 300) -> UIImage? {
+        let stamp = (try? u.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate)?.timeIntervalSince1970 ?? 0
+        let key = "\(u.path)|\(Int(px))|\(stamp)" as NSString
+        if let c = cache.object(forKey: key) { return c }
+        guard let s = CGImageSourceCreateWithURL(u as CFURL, nil) else { return nil }
+        let opts: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: px
+        ]
+        guard let cg = CGImageSourceCreateThumbnailAtIndex(s, 0, opts as CFDictionary) else { return nil }
+        let img = UIImage(cgImage: cg)
+        cache.setObject(img, forKey: key)
+        return img
+    }
+
+    // 转成方向正确、长边不超过 maxPixel 的 JPEG（HEIC、竖拍、超大图都能稳定读取，识别文字不会躺倒）
+    static func normalizedJPEG(from src: URL, maxPixel: CGFloat = 3072) -> Data? {
+        guard let s = CGImageSourceCreateWithURL(src as CFURL, nil) else { return nil }
+        let opts: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixel
+        ]
+        guard let cg = CGImageSourceCreateThumbnailAtIndex(s, 0, opts as CFDictionary) else { return nil }
+        return UIImage(cgImage: cg).jpegData(compressionQuality: 0.92)
+    }
+
+    // 从「文件」App 导入：协调读取（会触发 iCloud 下载），并校验文件非空、图片可打开
+    static func importFile(_ src: URL) -> (url: URL?, error: String?) {
+        let ok = src.startAccessingSecurityScopedResource()
+        defer { if ok { src.stopAccessingSecurityScopedResource() } }
+        let name = src.lastPathComponent
+        let dst = Store.dir("Inbox").appendingPathComponent(name)
+        try? FileManager.default.removeItem(at: dst)
+        var copied = false
+        var coordErr: NSError?
+        NSFileCoordinator().coordinate(readingItemAt: src, options: [], error: &coordErr) { u in
+            copied = (try? FileManager.default.copyItem(at: u, to: dst)) != nil
+        }
+        guard copied else { return (nil, "「\(name)」读取失败。如果它在 iCloud 里，请先在「文件」App 里下载到本机。") }
+        if (size(dst) ?? 0) == 0 {
+            try? FileManager.default.removeItem(at: dst)
+            return (nil, "「\(name)」是空文件。")
+        }
+        if isImage(dst) && !readable(dst) {
+            try? FileManager.default.removeItem(at: dst)
+            return (nil, "「\(name)」不是有效的图片。")
+        }
+        return (dst, nil)
+    }
+}
