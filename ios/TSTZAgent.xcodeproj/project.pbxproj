@@ -26,10 +26,14 @@
 		83240D646233F25E85AFD909 /* Core.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33EBC208AAA0685459A77CA5 /* Core.swift */; };
 		866E4E05F73F3EE3D38FA8DD /* Agent.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACBF423F7B5759B73346F23C /* Agent.swift */; };
 		9E37CA693379DE9AF71C601C /* TSTZLive.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF218E53F50DB3F539B8391E /* TSTZLive.swift */; };
+		AB67C8F4DFB72C8EED4C6C2E /* ClockBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0369341F792E658B4665A60 /* ClockBridge.swift */; };
+		BD38BC0DDF0B1AA2288B9843 /* ChatParts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B40865156B8A5F8C6B5531E /* ChatParts.swift */; };
+		C4981AC05E29F3B70A7F0B13 /* ConnectorUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFC7844A5E64B339F7DFA507 /* ConnectorUI.swift */; };
 		C701694EEA0EDC66ECD33E53 /* Convert.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E7A3B5D3328EA286FF776B2 /* Convert.swift */; };
 		E203B621242D87C2CBE3070F /* Pages.swift in Sources */ = {isa = PBXBuildFile; fileRef = 438EC194EEB4ADC78229C1DD /* Pages.swift */; };
 		E962B3E9E6122F26D1531F94 /* Files.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1BA3C44ACB60EC914078593 /* Files.swift */; };
 		ED731F7ADB35979D4DA8C2CD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9EA5BECF265FC50BEC0A1A36 /* Assets.xcassets */; };
+		F45147947B696853CF72B09A /* AgentExt.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B43629F12F1F786BC2B18A7 /* AgentExt.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -72,13 +76,17 @@
 		768C409EAE9C5BBFF33875C9 /* Tasks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tasks.swift; sourceTree = "<group>"; };
 		89CEF7EFD9393FE7C57411B1 /* Photo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Photo.swift; sourceTree = "<group>"; };
 		89F24A218559D43937FB9D03 /* Skills.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Skills.swift; sourceTree = "<group>"; };
+		8B40865156B8A5F8C6B5531E /* ChatParts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatParts.swift; sourceTree = "<group>"; };
+		9B43629F12F1F786BC2B18A7 /* AgentExt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentExt.swift; sourceTree = "<group>"; };
 		9E77773F5FB905773A523861 /* Intents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Intents.swift; sourceTree = "<group>"; };
 		9EA5BECF265FC50BEC0A1A36 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		ACBF423F7B5759B73346F23C /* Agent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agent.swift; sourceTree = "<group>"; };
 		B22543CF5123098D67A28DBF /* Live.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Live.swift; sourceTree = "<group>"; };
+		C0369341F792E658B4665A60 /* ClockBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClockBridge.swift; sourceTree = "<group>"; };
 		C387607AEA72EC82BAB7D840 /* BotActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotActivity.swift; sourceTree = "<group>"; };
 		CA43F639E4E53E643A17976D /* TSTZLive.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = TSTZLive.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		D1BA3C44ACB60EC914078593 /* Files.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Files.swift; sourceTree = "<group>"; };
+		DFC7844A5E64B339F7DFA507 /* ConnectorUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectorUI.swift; sourceTree = "<group>"; };
 		EF218E53F50DB3F539B8391E /* TSTZLive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TSTZLive.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -97,9 +105,13 @@
 			isa = PBXGroup;
 			children = (
 				ACBF423F7B5759B73346F23C /* Agent.swift */,
+				9B43629F12F1F786BC2B18A7 /* AgentExt.swift */,
 				9EA5BECF265FC50BEC0A1A36 /* Assets.xcassets */,
+				8B40865156B8A5F8C6B5531E /* ChatParts.swift */,
 				36A68829C20696DA27AB54ED /* ChatViews.swift */,
+				C0369341F792E658B4665A60 /* ClockBridge.swift */,
 				5FEFA9DDDAD17E868ACA8C3D /* Connectors.swift */,
+				DFC7844A5E64B339F7DFA507 /* ConnectorUI.swift */,
 				4E7A3B5D3328EA286FF776B2 /* Convert.swift */,
 				33EBC208AAA0685459A77CA5 /* Core.swift */,
 				D1BA3C44ACB60EC914078593 /* Files.swift */,
@@ -247,8 +259,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				866E4E05F73F3EE3D38FA8DD /* Agent.swift in Sources */,
+				F45147947B696853CF72B09A /* AgentExt.swift in Sources */,
 				1C2617D8A34CDF3E7F4EFDCD /* BotActivity.swift in Sources */,
+				BD38BC0DDF0B1AA2288B9843 /* ChatParts.swift in Sources */,
 				08776F9C60355FC2E91449BE /* ChatViews.swift in Sources */,
+				AB67C8F4DFB72C8EED4C6C2E /* ClockBridge.swift in Sources */,
+				C4981AC05E29F3B70A7F0B13 /* ConnectorUI.swift in Sources */,
 				028F7ABDE61E46B542B37B4B /* Connectors.swift in Sources */,
 				C701694EEA0EDC66ECD33E53 /* Convert.swift in Sources */,
 				83240D646233F25E85AFD909 /* Core.swift in Sources */,
@@ -348,7 +364,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 0.3;
+				MARKETING_VERSION = 0.4;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Hao-Yi-Miao.TSTZ-Agent.Live";
 				PRODUCT_NAME = TSTZLive;
 				SDKROOT = iphoneos;
@@ -367,7 +383,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 0.3;
+				MARKETING_VERSION = 0.4;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Hao-Yi-Miao.TSTZ-Agent.Live";
 				PRODUCT_NAME = TSTZLive;
 				SDKROOT = iphoneos;
@@ -387,7 +403,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.3;
+				MARKETING_VERSION = 0.4;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Hao-Yi-Miao.TSTZ-Agent";
 				PRODUCT_NAME = TSTZBot;
 				SDKROOT = iphoneos;
@@ -472,7 +488,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.3;
+				MARKETING_VERSION = 0.4;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Hao-Yi-Miao.TSTZ-Agent";
 				PRODUCT_NAME = TSTZBot;
 				SDKROOT = iphoneos;
