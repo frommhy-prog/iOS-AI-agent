@@ -45,6 +45,7 @@ struct TSTZBotApp: App {
 }
 
 // 其他应用调用：tstzbot://ask?q=问题   tstzbot://run?name=技能名&input=内容&x-success=回调地址
+// 内部回调：tstzbot://clock（系统时钟闹钟）  tstzbot://connector（连接器结果）
 enum URLRouter {
     @MainActor static func handle(_ url: URL) {
         guard url.scheme == "tstzbot" else { return }
@@ -60,6 +61,12 @@ enum URLRouter {
                 c.queryItems = (c.queryItems ?? []) + [URLQueryItem(name: "result", value: out)]
                 if let u = c.url { Task { await UIApplication.shared.open(u) } }
             }
+        case "clock":
+            AppState.shared.tab = 0
+            ClockBridge.callback(q)
+        case "connector":
+            AppState.shared.tab = 0
+            Connectors.callback(q)
         default:
             break
         }
@@ -107,7 +114,7 @@ struct LogoMark: View {
     }
 }
 
-// 文件卡片：图片显示缩略图，其他显示类型与大小
+// 文件卡片：图片显示缩略图（读不出来会明确提示），其他显示类型与大小
 struct FileCard: View {
     let url: URL
     @Binding var preview: URL?
@@ -126,15 +133,21 @@ struct FileCard: View {
     }
 
     private var sizeText: String {
-        let n = (try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? Int) ?? 0
-        return ByteCountFormatter.string(fromByteCount: Int64(n), countStyle: .file)
+        guard let n = Files.size(url) else { return "文件不存在" }
+        return n == 0 ? "空文件" : ByteCountFormatter.string(fromByteCount: n, countStyle: .file)
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if isImage, let ui = UIImage(contentsOfFile: url.path) {
-                Image(uiImage: ui).resizable().scaledToFit().frame(maxHeight: 220)
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            if isImage {
+                if let ui = Files.thumb(url, max: 900) {
+                    Image(uiImage: ui).resizable().scaledToFit().frame(maxHeight: 220)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .onTapGesture { preview = url }
+                } else {
+                    Label("这张图片无法读取", systemImage: "exclamationmark.triangle.fill")
+                        .font(.footnote).foregroundStyle(.red)
+                }
             }
             HStack(spacing: 10) {
                 Image(systemName: kind.0).font(.title3).foregroundStyle(Color.accentColor)
