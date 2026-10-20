@@ -1,63 +1,126 @@
 import SwiftUI
 import UIKit
+import AVFoundation
 
-struct MsgRow: View {
-    let m: Msg
-    @Binding var preview: URL?
+// 朗读回答
+@MainActor
+final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
+    static let shared = Speaker()
+    @Published var speakingId: UUID?
+    private let synth = AVSpeechSynthesizer()
 
-    var body: some View {
-        let me = m.role == "user"
-        VStack(alignment: me ? .trailing : .leading, spacing: 8) {
-            ForEach(m.files, id: \.self) { FileCard(url: $0, preview: $preview) }
-            if !m.text.isEmpty {
-                Text(m.text)
-                    .textSelection(.enabled)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .background(me ? Color.accentColor : Color(.secondarySystemGroupedBackground))
-                    .foregroundStyle(me ? Color.white : Color.primary)
-                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                    .contextMenu {
-                        Button { UIPasteboard.general.string = m.text } label: { Label("复制", systemImage: "doc.on.doc") }
-                        ShareLink(item: m.text) { Label("分享", systemImage: "square.and.arrow.up") }
-                    }
-            }
+    override init() {
+        super.init()
+        synth.delegate = self
+    }
+
+    func toggle(_ text: String, id: UUID) {
+        if speakingId == id {
+            synth.stopSpeaking(at: .immediate)
+            speakingId = nil
+            return
         }
-        .frame(maxWidth: .infinity, alignment: me ? .trailing : .leading)
+        synth.stopSpeaking(at: .immediate)
+        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .spokenAudio)
+        try? AVAudioSession.sharedInstance().setActive(true)
+        let plain = text.replacingOccurrences(of: "[*#`>_]", with: "", options: .regularExpression)
+        let u = AVSpeechUtterance(string: plain)
+        u.voice = AVSpeechSynthesisVoice(language: "zh-CN")
+        speakingId = id
+        synth.speak(u)
+    }
+
+    nonisolated func speechSynthesizer(_ s: AVSpeechSynthesizer, didFinish utterance: AVSpeechUtterance) {
+        Task { @MainActor in self.speakingId = nil }
+    }
+
+    nonisolated func speechSynthesizer(_ s: AVSpeechSynthesizer, didCancel utterance: AVSpeechUtterance) {
+        Task { @MainActor in self.speakingId = nil }
     }
 }
 
-// MARK: 对话记录
-struct HistoryView: View {
-    @ObservedObject var agent = Agent.shared
-    @Environment(\.dismiss) private var dismiss
-    @State private var rows: [Row] = []
+struct ThinkingView: View {
+    @State private var spin = false
 
     var body: some View {
-        NavigationStack {
-            List {
-                Button { agent.newChat(); dismiss() } label: { Label("新建对话", systemImage: "square.and.pencil") }
-                Section("历史对话") {
-                    ForEach(rows.indices, id: \.self) { i in
-                        Button { agent.open(rows[i].i("id")); dismiss() } label: {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(rows[i].s("title")).foregroundStyle(.primary).lineLimit(1)
-                                Text(Sys.fmt(Date(timeIntervalSince1970: rows[i].d("ts")))).font(.footnote).foregroundStyle(.secondary)
-                            }
-                            .padding(.vertical, 2)
-                        }
-                    }
-                    .onDelete { idx in
-                        for i in idx { agent.deleteConv(rows[i].i("id")) }
-                        rows = agent.convs()
-                    }
-                }
-            }
-            .navigationTitle("对话记录")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("完成") { dismiss() } } }
-            .onAppear { rows = agent.convs() }
+        HStack(spacing: 8) {
+            Image(systemName: "sparkle")
+                .foregroundStyle(Brand.accent)
+                .rotationEffect(.degrees(spin ? 360 : 0))
+                .animation(.linear(duration: 2).repeatForever(autoreverses: false), value: spin)
+            Text("思考中…").foregroundStyle(Brand.sub)
         }
+        .onAppear { spin = true }
+    }
+}
+
+// 一条消息：我的消息在右侧浅色气泡；助理的回答直接排在页面上（Markdown、可复制、朗读、重新生成）
+struct MessageView: View {
+    let m: Msg
+    let isLast: Bool
+    @Binding var preview: URL?
+    var onRegenerate: () -> Void
+    @ObservedObject private var speaker = Speaker.shared
+    @State private var copied = false
+
+    var body: some View {
+        if m.role == "user" { user } else { assistant }
+    }
+
+    var user: some View {
+        VStack(alignment: .trailing, spacing: 8) {
+            ForEach(m.files, id: \.self) { FileCard(url: $0, preview: $preview) }
+            if !m.text.isEmpty {
+                Text(m.text)
+                    .font(.system(size: 17))
+                    .foregroundStyle(Brand.ink)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 11)
+                    .background(Brand.userBubble)
+                    .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                    .contextMenu {
+                        Button { UIPasteboard.general.string = m.text } label: { Label("复制", systemImage: "doc.on.doc") }
+                    }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .trailing)
+        .padding(.leading, 44)
+    }
+
+    var assistant: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ForEach(m.files, id: \.self) { FileCard(url: $0, preview: $preview) }
+            if m.text.isEmpty && m.streaming {
+                ThinkingView()
+            } else if !m.text.isEmpty {
+                MarkdownText(text: m.text)
+            }
+            if !m.streaming && !m.text.isEmpty { actions }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    var actions: some View {
+        HStack(spacing: 20) {
+            Button {
+                UIPasteboard.general.string = m.text
+                copied = true
+                Task {
+                    try? await Task.sleep(nanoseconds: 1_500_000_000)
+                    copied = false
+                }
+            } label: { Image(systemName: copied ? "checkmark" : "doc.on.doc") }
+            Button { speaker.toggle(m.text, id: m.id) } label: {
+                Image(systemName: speaker.speakingId == m.id ? "speaker.slash" : "speaker.wave.2")
+            }
+            ShareLink(item: m.text) { Image(systemName: "square.and.arrow.up") }
+            if isLast {
+                Button { onRegenerate() } label: { Image(systemName: "arrow.clockwise") }
+            }
+        }
+        .font(.system(size: 15))
+        .foregroundStyle(Brand.sub)
+        .padding(.top, 2)
     }
 }
 
@@ -115,11 +178,13 @@ struct ShareView: View {
                 }
                 .padding(16)
             }
+            .background(Brand.bg)
             .navigationTitle("分享对话")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("完成") { dismiss() } } }
             .task(id: "\(scope)-\(dark)") { render() }
         }
+        .presentationBackground(Brand.bg)
     }
 
     @MainActor func render() {
@@ -137,7 +202,6 @@ struct ShareView: View {
 struct ShareCard: View {
     let msgs: [Msg]
     let dark: Bool
-    @AppStorage("accent") private var accent = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -157,7 +221,7 @@ struct ShareCard: View {
                         .font(.subheadline)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 9)
-                        .background(me ? Theme.accent(accent) : (dark ? Color.white.opacity(0.1) : Color.black.opacity(0.06)))
+                        .background(me ? Brand.accent : (dark ? Color.white.opacity(0.1) : Color.black.opacity(0.06)))
                         .foregroundStyle(me ? Color.white : (dark ? Color.white : Color.black))
                         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                     if !me { Spacer(minLength: 40) }
