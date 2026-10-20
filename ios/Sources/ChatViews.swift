@@ -1,5 +1,4 @@
 import SwiftUI
-import PhotosUI
 import QuickLook
 import UniformTypeIdentifiers
 
@@ -9,11 +8,16 @@ struct ChatView: View {
     @StateObject private var voice = Voice()
     @AppStorage("autoSend") private var autoSend = false
     @State private var input = ""
-    @State private var photoItem: PhotosPickerItem?
     @State private var showPhoto = false
+    @State private var showCamera = false
     @State private var showFile = false
     @State private var showHistory = false
     @State private var showShare = false
+    @State private var showClock = false
+    @State private var showConnectors = false
+    @State private var conns: [Row] = []
+    @State private var activeConn = ""
+    @State private var notice = ""
     @State private var preview: URL?
     @FocusState private var focus: Bool
 
@@ -67,25 +71,39 @@ struct ChatView: View {
             }
             .sheet(isPresented: $showHistory) { HistoryView() }
             .sheet(isPresented: $showShare) { ShareView() }
-            .photosPicker(isPresented: $showPhoto, selection: $photoItem, matching: .images)
-            .fileImporter(isPresented: $showFile, allowedContentTypes: [.item], allowsMultipleSelection: true) { r in
-                for u in (try? r.get()) ?? [] {
-                    if let c = Store.copyIn(u) { agent.attachments.append(Attach(url: c)) }
-                }
+            .sheet(isPresented: $showClock) { ClockSetupView() }
+            .sheet(isPresented: $showConnectors, onDismiss: { conns = Connectors.all() }) {
+                ConnectorHub { activeConn = $0.s("name") }
             }
-            .onChange(of: photoItem) { _, item in
-                guard let item else { return }
-                Task {
-                    if let d = try? await item.loadTransferable(type: Data.self) {
-                        let u = Store.stamped("照片", "jpg")
-                        try? d.write(to: u)
-                        agent.attachments.append(Attach(url: u))
+            .sheet(isPresented: $showPhoto) {
+                PhotoPicker(onPick: { urls in
+                    showPhoto = false
+                    for u in urls { agent.attachments.append(Attach(url: u)) }
+                }, onError: { warn($0) })
+                .ignoresSafeArea()
+            }
+            .fullScreenCover(isPresented: $showCamera) {
+                CameraPicker { u in
+                    showCamera = false
+                    if let u { agent.attachments.append(Attach(url: u)) }
+                }
+                .ignoresSafeArea()
+            }
+            .fileImporter(isPresented: $showFile, allowedContentTypes: [.item], allowsMultipleSelection: true) { r in
+                switch r {
+                case .success(let urls):
+                    for u in urls {
+                        let res = Files.importFile(u)
+                        if let c = res.url { agent.attachments.append(Attach(url: c)) }
+                        else if let e = res.error { warn(e) }
                     }
-                    photoItem = nil
+                case .failure(let e):
+                    warn("无法打开文件：\(e.localizedDescription)")
                 }
             }
             .quickLookPreview($preview)
             .onAppear {
+                conns = Connectors.all()
                 voice.onText = { input = $0 }
                 voice.onFinished = { t in if autoSend && !t.isEmpty { send() } }
             }
@@ -126,6 +144,10 @@ struct ChatView: View {
             if !voice.error.isEmpty {
                 Text(voice.error).font(.footnote).foregroundStyle(.red).frame(maxWidth: .infinity, alignment: .leading)
             }
+            if !notice.isEmpty {
+                Text(notice).font(.footnote).foregroundStyle(.red).frame(maxWidth: .infinity, alignment: .leading)
+            }
+            if !activeConn.isEmpty { connChip }
             if !agent.attachments.isEmpty { attachmentRow }
             if voice.listening { listeningBar } else { typeBar }
         }
@@ -134,19 +156,52 @@ struct ChatView: View {
         .background(.bar)
     }
 
+    // 当前选中的连接器：之后发送的内容都会交给它，点 × 退出
+    var connChip: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "link").foregroundStyle(Color.accentColor)
+            Text(activeConn).font(.subheadline.weight(.medium))
+            let h = Connectors.hint(activeConn)
+            if !h.isEmpty { Text(h).font(.footnote).foregroundStyle(.secondary).lineLimit(1) }
+            Spacer()
+            Button { activeConn = "" } label: { Image(systemName: "xmark.circle.fill").foregroundStyle(.secondary) }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(Color.accentColor.opacity(0.14))
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    var plusMenu: some View {
+        Menu {
+            Menu {
+                ForEach(conns.indices, id: \.self) { i in
+                    Button { activeConn = conns[i].s("name") } label: {
+                        Label(conns[i].s("name"), systemImage: Connectors.icon(conns[i].s("kind")))
+                    }
+                }
+                Button { showConnectors = true } label: {
+                    Label(conns.isEmpty ? "添加连接器…" : "添加与管理…", systemImage: "slider.horizontal.3")
+                }
+            } label: { Label("连接器", systemImage: "link") }
+            Button { showClock = true } label: { Label("系统时钟闹钟", systemImage: "alarm") }
+            Divider()
+            Button { showCamera = true } label: { Label("拍照", systemImage: "camera") }
+            Button { showPhoto = true } label: { Label("照片", systemImage: "photo") }
+            Button { showFile = true } label: { Label("文件", systemImage: "paperclip") }
+            Button { paste() } label: { Label("粘贴", systemImage: "doc.on.clipboard") }
+        } label: {
+            Image(systemName: activeConn.isEmpty ? "plus" : "link").font(.title3.weight(.semibold))
+                .frame(width: 40, height: 40)
+                .background(Color(.tertiarySystemFill))
+                .clipShape(Circle())
+        }
+    }
+
     var typeBar: some View {
         HStack(alignment: .bottom, spacing: 10) {
-            Menu {
-                Button { paste() } label: { Label("粘贴", systemImage: "doc.on.clipboard") }
-                Button { showPhoto = true } label: { Label("照片", systemImage: "photo") }
-                Button { showFile = true } label: { Label("文件", systemImage: "paperclip") }
-            } label: {
-                Image(systemName: "plus").font(.title3.weight(.semibold))
-                    .frame(width: 40, height: 40)
-                    .background(Color(.tertiarySystemFill))
-                    .clipShape(Circle())
-            }
-            TextField("发消息给 TSTZ Bot", text: $input, axis: .vertical)
+            plusMenu
+            TextField(activeConn.isEmpty ? "发消息给 TSTZ Bot" : "发给「\(activeConn)」的内容", text: $input, axis: .vertical)
                 .lineLimit(1...5)
                 .focused($focus)
                 .padding(.horizontal, 14)
@@ -202,7 +257,7 @@ struct ChatView: View {
                 HStack(spacing: 10) {
                     ForEach(agent.attachments) { a in
                         ZStack(alignment: .topTrailing) {
-                            thumb(a.url)
+                            thumb(a.url).onTapGesture { preview = a.url }
                             Button { agent.attachments.removeAll { $0.id == a.id } } label: {
                                 Image(systemName: "xmark.circle.fill").foregroundStyle(.white, Color.black.opacity(0.6))
                             }
@@ -213,7 +268,7 @@ struct ChatView: View {
                 .padding(.top, 8)
                 .padding(.trailing, 8)
             }
-            if agent.attachments.contains(where: { Convert.imgExt.contains($0.url.pathExtension.lowercased()) }) {
+            if agent.attachments.contains(where: { Files.isImage($0.url) }) {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         chip("识别文字")
@@ -227,8 +282,10 @@ struct ChatView: View {
 
     func thumb(_ u: URL) -> some View {
         Group {
-            if let ui = UIImage(contentsOfFile: u.path), Convert.imgExt.contains(u.pathExtension.lowercased()) {
+            if Files.isImage(u), let ui = Files.thumb(u, max: 180) {
                 Image(uiImage: ui).resizable().scaledToFill()
+            } else if Files.isImage(u) {
+                Image(systemName: "exclamationmark.triangle").font(.title2).foregroundStyle(.red)
             } else {
                 Image(systemName: "doc").font(.title2).foregroundStyle(Color.accentColor)
             }
@@ -247,195 +304,56 @@ struct ChatView: View {
             .clipShape(Capsule())
     }
 
+    // MARK: 发送：识别文字 → 当前连接器 → 「用 XX 查 YY」→ 普通对话
     func send() {
         let t = input
+        let files = agent.attachments.map { $0.url }
         input = ""
         focus = false
         if voice.listening { voice.stop() }
+        if t.trimmingCharacters(in: .whitespaces) == "识别文字", !files.isEmpty, files.allSatisfy({ Files.isImage($0) }) {
+            Task { await agent.recognize(files) }
+            return
+        }
+        if files.isEmpty, !t.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            if !activeConn.isEmpty {
+                let name = activeConn
+                Task { await agent.runConnector(name, t) }
+                return
+            }
+            if let m = Connectors.match(t) {
+                let name = m.0.s("name")
+                Task { await agent.runConnector(name, m.1, shown: t) }
+                return
+            }
+        }
         Task { await agent.send(t) }
+    }
+
+    func warn(_ s: String) {
+        notice = s
+        Task {
+            try? await Task.sleep(nanoseconds: 6_000_000_000)
+            if notice == s { notice = "" }
+        }
     }
 
     func paste() {
         let pb = UIPasteboard.general
-        if let img = pb.image, let d = img.pngData() {
-            let u = Store.stamped("粘贴图片", "png")
-            try? d.write(to: u)
-            agent.attachments.append(Attach(url: u))
-        } else if let s = pb.string {
+        if pb.hasImages, let img = pb.image {
+            if let d = img.pngData() {
+                let u = Store.stamped("粘贴图片", "png")
+                if (try? d.write(to: u)) != nil, Files.readable(u) {
+                    agent.attachments.append(Attach(url: u))
+                    return
+                }
+            }
+            warn("剪贴板里的图片无法读取")
+        } else if let s = pb.string, !s.isEmpty {
             input += s
             focus = true
+        } else {
+            warn("剪贴板是空的")
         }
-    }
-}
-
-struct MsgRow: View {
-    let m: Msg
-    @Binding var preview: URL?
-
-    var body: some View {
-        let me = m.role == "user"
-        VStack(alignment: me ? .trailing : .leading, spacing: 8) {
-            ForEach(m.files, id: \.self) { FileCard(url: $0, preview: $preview) }
-            if !m.text.isEmpty {
-                Text(m.text)
-                    .textSelection(.enabled)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .background(me ? Color.accentColor : Color(.secondarySystemGroupedBackground))
-                    .foregroundStyle(me ? Color.white : Color.primary)
-                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: me ? .trailing : .leading)
-    }
-}
-
-// MARK: 对话记录
-struct HistoryView: View {
-    @ObservedObject var agent = Agent.shared
-    @Environment(\.dismiss) private var dismiss
-    @State private var rows: [Row] = []
-
-    var body: some View {
-        NavigationStack {
-            List {
-                Button { agent.newChat(); dismiss() } label: { Label("新建对话", systemImage: "square.and.pencil") }
-                Section("历史对话") {
-                    ForEach(rows.indices, id: \.self) { i in
-                        Button { agent.open(rows[i].i("id")); dismiss() } label: {
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(rows[i].s("title")).foregroundStyle(.primary).lineLimit(1)
-                                Text(Sys.fmt(Date(timeIntervalSince1970: rows[i].d("ts")))).font(.footnote).foregroundStyle(.secondary)
-                            }
-                            .padding(.vertical, 2)
-                        }
-                    }
-                    .onDelete { idx in
-                        for i in idx { agent.deleteConv(rows[i].i("id")) }
-                        rows = agent.convs()
-                    }
-                }
-            }
-            .navigationTitle("对话记录")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("完成") { dismiss() } } }
-            .onAppear { rows = agent.convs() }
-        }
-    }
-}
-
-// MARK: 分享对话（图片 / 文字）
-struct ShareView: View {
-    @ObservedObject var agent = Agent.shared
-    @Environment(\.dismiss) private var dismiss
-    @State private var scope = 0
-    @State private var dark = false
-    @State private var url: URL?
-    @State private var image: UIImage?
-    @State private var saved = false
-
-    var chosen: [Msg] { scope == 1 ? Array(agent.msgs.suffix(2)) : Array(agent.msgs.suffix(30)) }
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 16) {
-                    Picker("范围", selection: $scope) {
-                        Text("整段对话").tag(0)
-                        Text("最近一轮").tag(1)
-                    }
-                    .pickerStyle(.segmented)
-                    Picker("样式", selection: $dark) {
-                        Text("浅色").tag(false)
-                        Text("深色").tag(true)
-                    }
-                    .pickerStyle(.segmented)
-                    if let image {
-                        Image(uiImage: image).resizable().scaledToFit()
-                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                            .shadow(color: .black.opacity(0.15), radius: 10, y: 4)
-                    }
-                    if let url, let image {
-                        ShareLink(item: url, preview: SharePreview("TSTZ Bot 对话", image: Image(uiImage: image))) {
-                            Label("分享图片到微信、QQ、微博等", systemImage: "square.and.arrow.up").frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.large)
-                        Button {
-                            UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
-                            saved = true
-                        } label: {
-                            Label(saved ? "已保存到相册" : "保存到相册", systemImage: "photo.on.rectangle").frame(maxWidth: .infinity)
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.large)
-                    }
-                    ShareLink(item: agent.transcript(chosen)) {
-                        Label("分享文字", systemImage: "text.bubble").frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.large)
-                }
-                .padding(16)
-            }
-            .navigationTitle("分享对话")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("完成") { dismiss() } } }
-            .task(id: "\(scope)-\(dark)") { render() }
-        }
-    }
-
-    @MainActor func render() {
-        let r = ImageRenderer(content: ShareCard(msgs: chosen, dark: dark))
-        r.scale = 3
-        guard let img = r.uiImage, let d = img.pngData() else { return }
-        let u = Store.dir("Outputs").appendingPathComponent("TSTZ Bot 对话.png")
-        try? d.write(to: u)
-        image = img
-        url = u
-        saved = false
-    }
-}
-
-struct ShareCard: View {
-    let msgs: [Msg]
-    let dark: Bool
-    @AppStorage("accent") private var accent = 0
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 10) {
-                LogoMark(size: 42)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("TSTZ Bot").font(.headline)
-                    Text(Sys.fmtFull(Date())).font(.footnote).foregroundStyle(.secondary)
-                }
-                Spacer()
-            }
-            ForEach(msgs) { m in
-                let me = m.role == "user"
-                HStack {
-                    if me { Spacer(minLength: 40) }
-                    Text(m.text.isEmpty ? "[文件]" : String(m.text.prefix(400)))
-                        .font(.subheadline)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 9)
-                        .background(me ? Theme.accent(accent) : (dark ? Color.white.opacity(0.1) : Color.black.opacity(0.06)))
-                        .foregroundStyle(me ? Color.white : (dark ? Color.white : Color.black))
-                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    if !me { Spacer(minLength: 40) }
-                }
-            }
-            Divider()
-            HStack {
-                Text("由 TSTZ Bot 生成").font(.footnote).foregroundStyle(.secondary)
-                Spacer()
-                Label("开发者微信 TSTZ-M", systemImage: "message.fill").font(.footnote.weight(.semibold))
-            }
-        }
-        .padding(20)
-        .frame(width: 390)
-        .background(dark ? Color(red: 0.07, green: 0.08, blue: 0.11) : Color.white)
-        .environment(\.colorScheme, dark ? .dark : .light)
     }
 }
