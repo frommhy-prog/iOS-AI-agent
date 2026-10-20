@@ -26,7 +26,9 @@
 		80DAF64F60138F1BDD58EAE4 /* Nlp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 079E08E36F2DDC80E544B87F /* Nlp.swift */; };
 		83240D646233F25E85AFD909 /* Core.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33EBC208AAA0685459A77CA5 /* Core.swift */; };
 		866E4E05F73F3EE3D38FA8DD /* Agent.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACBF423F7B5759B73346F23C /* Agent.swift */; };
+		8F3C8295C25979991F73F8AF /* Shell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B3988D25E932C47C55B3D21 /* Shell.swift */; };
 		9E37CA693379DE9AF71C601C /* TSTZLive.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF218E53F50DB3F539B8391E /* TSTZLive.swift */; };
+		9E55A2CB312D641662E57E9B /* SettingsPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB850DA508C86CA4750B5071 /* SettingsPage.swift */; };
 		AB67C8F4DFB72C8EED4C6C2E /* ClockBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0369341F792E658B4665A60 /* ClockBridge.swift */; };
 		BD38BC0DDF0B1AA2288B9843 /* ChatParts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B40865156B8A5F8C6B5531E /* ChatParts.swift */; };
 		C4981AC05E29F3B70A7F0B13 /* ConnectorUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = DFC7844A5E64B339F7DFA507 /* ConnectorUI.swift */; };
@@ -65,6 +67,7 @@
 /* Begin PBXFileReference section */
 		05408064C5C05006B3B3FC2B /* Tools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tools.swift; sourceTree = "<group>"; };
 		079E08E36F2DDC80E544B87F /* Nlp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nlp.swift; sourceTree = "<group>"; };
+		0B3988D25E932C47C55B3D21 /* Shell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shell.swift; sourceTree = "<group>"; };
 		212AB59CCC01B37C55962AA5 /* Sys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sys.swift; sourceTree = "<group>"; };
 		2278739C9AFDEB72BE37F77B /* KB.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KB.swift; sourceTree = "<group>"; };
 		33EBC208AAA0685459A77CA5 /* Core.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Core.swift; sourceTree = "<group>"; };
@@ -92,6 +95,7 @@
 		D1BA3C44ACB60EC914078593 /* Files.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Files.swift; sourceTree = "<group>"; };
 		DFC7844A5E64B339F7DFA507 /* ConnectorUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectorUI.swift; sourceTree = "<group>"; };
 		EF218E53F50DB3F539B8391E /* TSTZLive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TSTZLive.swift; sourceTree = "<group>"; };
+		FB850DA508C86CA4750B5071 /* SettingsPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsPage.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -128,6 +132,8 @@
 				079E08E36F2DDC80E544B87F /* Nlp.swift */,
 				438EC194EEB4ADC78229C1DD /* Pages.swift */,
 				89CEF7EFD9393FE7C57411B1 /* Photo.swift */,
+				FB850DA508C86CA4750B5071 /* SettingsPage.swift */,
+				0B3988D25E932C47C55B3D21 /* Shell.swift */,
 				89F24A218559D43937FB9D03 /* Skills.swift */,
 				212AB59CCC01B37C55962AA5 /* Sys.swift */,
 				768C409EAE9C5BBFF33875C9 /* Tasks.swift */,
@@ -284,6 +290,8 @@
 				80DAF64F60138F1BDD58EAE4 /* Nlp.swift in Sources */,
 				E203B621242D87C2CBE3070F /* Pages.swift in Sources */,
 				5370F2BF1C7ED6D0B4D73107 /* Photo.swift in Sources */,
+				9E55A2CB312D641662E57E9B /* SettingsPage.swift in Sources */,
+				8F3C8295C25979991F73F8AF /* Shell.swift in Sources */,
 				0AC8A978437CD4FE7F9010A7 /* Skills.swift in Sources */,
 				322B3BC1D66B1216F50B6750 /* Sys.swift in Sources */,
 				28A20CDFB92F271ED269FB77 /* Tasks.swift in Sources */,
@@ -372,7 +380,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 0.4;
+				MARKETING_VERSION = 0.5;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Hao-Yi-Miao.TSTZ-Agent.Live";
 				PRODUCT_NAME = TSTZLive;
 				SDKROOT = iphoneos;
@@ -391,7 +399,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 0.4;
+				MARKETING_VERSION = 0.5;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Hao-Yi-Miao.TSTZ-Agent.Live";
 				PRODUCT_NAME = TSTZLive;
 				SDKROOT = iphoneos;
@@ -411,7 +419,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.4;
+				MARKETING_VERSION = 0.5;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Hao-Yi-Miao.TSTZ-Agent";
 				PRODUCT_NAME = TSTZBot;
 				SDKROOT = iphoneos;
@@ -496,7 +504,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.4;
+				MARKETING_VERSION = 0.5;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Hao-Yi-Miao.TSTZ-Agent";
 				PRODUCT_NAME = TSTZBot;
 				SDKROOT = iphoneos;
