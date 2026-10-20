@@ -1,3 +1,9 @@
 Xcode 26.6
 Build version 17F113
+/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/Sys.swift:137:28: error: cannot find 'ClockBridge' in scope
+/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/Sys.swift:138:34: error: cannot find 'ClockBridge' in scope
+/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/Sys.swift:145:135: error: cannot find 'ClockBridge' in scope
+/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/Sys.swift:145:39: error: cannot find 'ClockBridge' in scope
+/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/Sys.swift:145:64: error: cannot find 'ClockBridge' in scope
+/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/Sys.swift:145:97: error: cannot find 'ClockBridge' in scope
 RESULT: FAILED
