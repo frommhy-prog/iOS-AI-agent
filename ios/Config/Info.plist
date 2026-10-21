@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>TSTZ Bot</string>
+	<string>知行</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -41,7 +41,7 @@
 	<key>NSAlarmKitUsageDescription</key>
 	<string>助理需要为你设置闹钟</string>
 	<key>NSCalendarsFullAccessUsageDescription</key>
-	<string>助理需要为你添加日程</string>
+	<string>助理需要为你添加和回顾日程</string>
 	<key>NSCameraUsageDescription</key>
 	<string>拍照后让助理识别文字或转换格式</string>
 	<key>NSMicrophoneUsageDescription</key>
@@ -49,9 +49,9 @@
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>保存处理后的图片和视频到相册</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>读取你的相册，选择照片发给助理识别文字或转换格式</string>
+	<string>读取你的相册，选择照片发给助理识别文字或转换格式，并在今日回顾里统计今天的照片</string>
 	<key>NSRemindersFullAccessUsageDescription</key>
-	<string>助理需要为你添加提醒事项</string>
+	<string>助理需要为你添加和回顾提醒事项</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>语音输入需要语音识别</string>
 	<key>NSSupportsLiveActivities</key>
