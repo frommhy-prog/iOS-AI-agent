@@ -1,3 +1,4 @@
 Xcode 26.6
 Build version 17F113
-RESULT: SUCCEEDED
+/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/ConvertUI.swift:26:8: error: invalid redeclaration of 'ConvertView'
+RESULT: FAILED
