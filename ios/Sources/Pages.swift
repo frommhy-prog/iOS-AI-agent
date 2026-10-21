@@ -168,108 +168,7 @@ struct ToolboxView: View {
     }
 }
 
-// MARK: 文件转换
-struct ConvertView: View {
-    @State private var file: URL?
-    @State private var showPick = false
-    @State private var target = ""
-    @State private var outs: [URL] = []
-    @State private var busy = false
-    @State private var err = ""
-    @State private var preview: URL?
-
-    static let names: [String: String] = [
-        "jpg": "JPG 图片", "png": "PNG 图片", "heic": "HEIC 图片", "pdf": "PDF", "tiff": "TIFF 图片", "gif": "GIF 图片", "bmp": "BMP 图片",
-        "txt": "文字", "csv": "CSV 表格", "json": "JSON", "md": "Markdown", "html": "网页", "tsv": "TSV 表格",
-        "mp4": "MP4 视频", "mov": "MOV 视频", "m4a": "音频", "compress": "压缩视频"
-    ]
-
-    var targets: [String] {
-        guard let f = file else { return [] }
-        let e = f.pathExtension.lowercased()
-        if Convert.imgExt.contains(e) { return ["jpg", "png", "heic", "pdf", "tiff", "gif", "bmp", "txt"] }
-        if e == "pdf" { return ["png", "jpg", "txt"] }
-        if Convert.vidExt.contains(e) { return ["mp4", "mov", "m4a", "compress", "jpg"] }
-        return ["csv", "json", "md", "html", "txt", "tsv", "pdf"]
-    }
-
-    var body: some View {
-        List {
-            Section {
-                Button { showPick = true } label: {
-                    Label(file == nil ? "选择要转换的文件" : "已选择：" + (file?.lastPathComponent ?? ""), systemImage: "doc.badge.plus")
-                }
-            }
-            if !targets.isEmpty {
-                Section("转换成") {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 96), spacing: 8)], spacing: 8) {
-                        ForEach(targets, id: \.self) { t in
-                            Button { target = t } label: {
-                                Text(Self.names[t] ?? t).font(.subheadline)
-                                    .frame(maxWidth: .infinity).padding(.vertical, 9)
-                                    .background(target == t ? Brand.accent : Color(.tertiarySystemFill))
-                                    .foregroundStyle(target == t ? Brand.onAccent : Color.primary)
-                                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                    .padding(.vertical, 4)
-                    Button { convert() } label: {
-                        HStack { if busy { ProgressView() }; Text(busy ? "转换中…" : "开始转换").frame(maxWidth: .infinity) }
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(busy || target.isEmpty)
-                    .listRowBackground(Color.clear)
-                }
-            }
-            if !err.isEmpty { Section { Label(err, systemImage: "exclamationmark.triangle.fill").foregroundStyle(.red) } }
-            if !outs.isEmpty {
-                Section("转换结果") {
-                    ForEach(outs, id: \.self) { u in
-                        VStack(alignment: .leading, spacing: 8) {
-                            FileCard(url: u, preview: $preview)
-                            if Convert.imgExt.contains(u.pathExtension.lowercased()) || Convert.vidExt.contains(u.pathExtension.lowercased()) {
-                                Button("存入相册") { saveToPhotos(u) }
-                            }
-                        }
-                        .listRowSeparator(.hidden)
-                    }
-                }
-            }
-            Section {
-                Text("支持图片、PDF、表格（CSV、JSON、Markdown、网页）、文本、视频互相转换，也能识别图片中的文字。")
-                    .font(.subheadline).foregroundStyle(.secondary)
-            }
-        }
-        .navigationTitle("文件转换")
-        .navigationBarTitleDisplayMode(.inline)
-        .quickLookPreview($preview)
-        .fileImporter(isPresented: $showPick, allowedContentTypes: [.item]) { r in
-            if let u = try? r.get(), let c = Store.copyIn(u) {
-                file = c
-                outs = []
-                err = ""
-                target = targets.first ?? ""
-            }
-        }
-    }
-
-    func convert() {
-        guard let f = file else { return }
-        busy = true
-        err = ""
-        Task {
-            do { outs = try await Convert.run(f, to: target) } catch { err = error.localizedDescription }
-            busy = false
-        }
-    }
-
-    func saveToPhotos(_ u: URL) {
-        if let img = UIImage(contentsOfFile: u.path) { UIImageWriteToSavedPhotosAlbum(img, nil, nil, nil) }
-        else if Convert.vidExt.contains(u.pathExtension.lowercased()) { UISaveVideoAtPathToSavedPhotosAlbum(u.path, nil, nil, nil) }
-    }
-}
+// 「文件转换」页面在 ConvertUI.swift（支持从相册选照片和视频）
 
 // MARK: 脚本技能
 struct SkillsView: View {
@@ -560,7 +459,7 @@ struct ShortcutsView: View {
                 action("bell", "N 分钟后提醒", "几分钟后发送通知提醒")
             }
             Section("怎么用") {
-                Text("1. 打开快捷指令，点右上角加号新建\n2. 点「添加操作」，搜索 TSTZ Bot\n3. 选择上面的动作，再接上你想要的步骤\n4. 在「自动化」里设置时间，就能定时自动运行")
+                Text("1. 打开快捷指令，点右上角加号新建\n2. 点「添加操作」，搜索 \(Brand.name)\n3. 选择上面的动作，再接上你想要的步骤\n4. 在「自动化」里设置时间，就能定时自动运行")
                     .font(.subheadline)
             }
             Section("让其他应用调用本 App") {
