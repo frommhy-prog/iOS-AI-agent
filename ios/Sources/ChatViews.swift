@@ -40,7 +40,7 @@ struct ChatView: View {
 
     private var title: String {
         if let t = agent.msgs.first(where: { $0.role == "user" })?.text, !t.isEmpty { return String(t.prefix(14)) }
-        return "TSTZ Bot"
+        return Brand.name
     }
 
     var body: some View {
@@ -130,8 +130,8 @@ struct ChatView: View {
 
     var emptyState: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Image(systemName: "sparkle").font(.system(size: 34)).foregroundStyle(Brand.ink).padding(.top, 40)
-            Text("\(greeting)，我是 TSTZ Bot")
+            LogoMark(size: 48).padding(.top, 40)
+            Text("\(greeting)，我是\(Brand.name)")
                 .font(.system(size: 30, weight: .regular, design: .serif))
                 .foregroundStyle(Brand.ink)
             Text("闹钟、提醒、文件转换、识别图片文字，都可以直接说。")
@@ -171,7 +171,7 @@ struct ChatView: View {
             if voice.listening {
                 listeningBar
             } else {
-                TextField(activeConn.isEmpty ? "发消息给 TSTZ Bot" : "发给「\(activeConn)」的内容", text: $input, axis: .vertical)
+                TextField(activeConn.isEmpty ? "发消息给 \(Brand.name)" : "发给「\(activeConn)」的内容", text: $input, axis: .vertical)
                     .lineLimit(1...6)
                     .focused($focus)
                     .font(.system(size: 17))
@@ -374,14 +374,13 @@ struct ChatView: View {
     func paste() {
         let pb = UIPasteboard.general
         if pb.hasImages, let img = pb.image {
-            if let d = Files.jpeg(from: img) {
-                let u = Store.stamped("粘贴图片", "jpg")
-                if (try? d.write(to: u)) != nil, Files.readable(u) {
-                    agent.attachments.append(Attach(url: u))
-                    return
-                }
+            guard let d = Files.jpeg(from: img) else { warn("剪贴板里的图片无法读取"); return }
+            let s = Files.save(d, name: "粘贴图片-\(Files.stampText()).jpg")
+            if let u = s.url {
+                agent.attachments.append(Attach(url: u))
+            } else {
+                warn("剪贴板里的图片保存失败（\(s.error)）")
             }
-            warn("剪贴板里的图片无法读取")
         } else if let s = pb.string, !s.isEmpty {
             input += s
             focus = true
