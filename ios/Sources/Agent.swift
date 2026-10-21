@@ -155,6 +155,7 @@ final class Agent: ObservableObject {
         msgs.append(ph)
         let mid = ph.id
         var reply = ""
+        if !files.isEmpty { Live.set(.working, "正在处理文件") }
         if let f = files.last, let r = await Router.convert(t, file: f) {
             reply = r.0
         } else if files.isEmpty, let r = await Router.handle(t) {
@@ -198,6 +199,7 @@ final class Agent: ObservableObject {
             return "做不到：iOS 不允许一个 App 自动点击或操作别的 App（点赞、关注、刷视频都不行），快捷指令也一样。\n脚本技能只能处理文字、读网页、查知识库，比如整理文案、提取网页要点、批量改写。想做其中一种，直接告诉我。"
         }
         update(mid, "正在编写脚本…")
+        Live.set(.working, "正在编写脚本")
         let r = await Skills.create(t) { p in
             Task { @MainActor in self.update(mid, p) }
         }
@@ -240,7 +242,7 @@ final class Agent: ObservableObject {
         let concise = (UserDefaults.standard.object(forKey: "style") as? Int ?? 0) == 0
         return Evolve.prompt()
             + "\n现在是" + Sys.fmtFull(Date()) + "，时区" + TimeZone.current.identifier + "。"
-            + "你是 TSTZ Bot，运行在用户 iPhone 上的中文助理。直接针对用户的问题作答，不要复述问题，信息够用时不要反问。"
+            + "你是 " + Brand.name + "，运行在用户 iPhone 上的中文助理。直接针对用户的问题作答，不要复述问题，信息够用时不要反问。"
             + "你看不到图片，只能依据识别出的类别和文字回答，不要说无法读取图片。"
             + (concise ? "回答要简短。" : "回答可以详细一些。")
             + "需要列表或代码时用 Markdown。不知道就直说不知道，不要编造。"
@@ -287,6 +289,8 @@ final class Agent: ObservableObject {
             break
         }
         let tools = Self.tools(for: t, hasFile: hasFile)
+        // 灵动岛：需要联网读网页时显示「搜索」，否则显示「思考」
+        Live.set(tools.contains { $0 is FetchURL } ? .searching : .thinking)
         let hist = msgs.dropLast(2).suffix(6).filter { !$0.text.isEmpty }
             .map { ($0.role == "user" ? "用户：" : "助理：") + String($0.text.prefix(200)) }
             .joined(separator: "\n")
@@ -321,6 +325,6 @@ final class Agent: ObservableObject {
     }
 
     func transcript(_ ms: [Msg]) -> String {
-        ms.map { ($0.role == "user" ? "我：" : "TSTZ Bot：") + $0.text }.joined(separator: "\n\n")
+        ms.map { ($0.role == "user" ? "我：" : Brand.name + "：") + $0.text }.joined(separator: "\n\n")
     }
 }
