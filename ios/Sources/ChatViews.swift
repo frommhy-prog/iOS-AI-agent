@@ -72,16 +72,18 @@ struct ChatView: View {
                     ConnectorHub { activeConn = $0.s("name") }.presentationBackground(Brand.bg)
                 }
                 .sheet(isPresented: $showPhoto) {
-                    PhotoPicker(onPick: { urls in
-                        showPhoto = false
+                    GalleryPicker(onPick: { urls in
                         for u in urls { agent.attachments.append(Attach(url: u)) }
                     }, onError: { warn($0) })
-                    .ignoresSafeArea()
                 }
                 .fullScreenCover(isPresented: $showCamera) {
-                    CameraPicker { u in
+                    CameraPicker { u, err in
                         showCamera = false
-                        if let u { agent.attachments.append(Attach(url: u)) }
+                        if let u {
+                            agent.attachments.append(Attach(url: u))
+                        } else if let err {
+                            warn(err)
+                        }
                     }
                     .ignoresSafeArea()
                 }
@@ -128,7 +130,7 @@ struct ChatView: View {
 
     var emptyState: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Image(systemName: "sparkle").font(.system(size: 34)).foregroundStyle(Brand.accent).padding(.top, 40)
+            Image(systemName: "sparkle").font(.system(size: 34)).foregroundStyle(Brand.ink).padding(.top, 40)
             Text("\(greeting)，我是 TSTZ Bot")
                 .font(.system(size: 30, weight: .regular, design: .serif))
                 .foregroundStyle(Brand.ink)
@@ -142,7 +144,7 @@ struct ChatView: View {
                         focus = true
                     } label: {
                         HStack(spacing: 12) {
-                            Image(systemName: idea.0).foregroundStyle(Brand.accent).frame(width: 24)
+                            Image(systemName: idea.0).foregroundStyle(Brand.ink).frame(width: 24)
                             Text(idea.1).foregroundStyle(Brand.ink)
                             Spacer()
                         }
@@ -195,7 +197,7 @@ struct ChatView: View {
     // 当前选中的连接器：之后发送的内容都会交给它，点 × 退出
     var connChip: some View {
         HStack(spacing: 8) {
-            Image(systemName: "link").foregroundStyle(Brand.accent)
+            Image(systemName: "link").foregroundStyle(Brand.ink)
             Text(activeConn).font(.subheadline.weight(.medium)).foregroundStyle(Brand.ink)
             let h = Connectors.hint(activeConn)
             if !h.isEmpty { Text(h).font(.footnote).foregroundStyle(Brand.sub).lineLimit(1) }
@@ -204,7 +206,7 @@ struct ChatView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(Brand.accent.opacity(0.14))
+        .background(Brand.userBubble)
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
@@ -250,7 +252,7 @@ struct ChatView: View {
         } label: {
             Image(systemName: agent.busy ? "stop.fill" : (empty ? "mic.fill" : "arrow.up"))
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(Brand.onAccent)
                 .frame(width: 36, height: 36)
                 .background(Brand.accent)
                 .clipShape(Circle())
@@ -261,7 +263,7 @@ struct ChatView: View {
         HStack(spacing: 12) {
             HStack(spacing: 3) {
                 ForEach(0..<14, id: \.self) { i in
-                    Capsule().fill(Brand.accent)
+                    Capsule().fill(Brand.ink)
                         .frame(width: 3, height: 8 + voice.level * 22 * CGFloat(abs(sin(Double(i) * 0.9))))
                 }
             }
@@ -272,7 +274,7 @@ struct ChatView: View {
                 .lineLimit(2)
                 .frame(maxWidth: .infinity, alignment: .leading)
             Button { voice.stop() } label: {
-                Image(systemName: "checkmark").font(.system(size: 16, weight: .semibold)).foregroundStyle(.white)
+                Image(systemName: "checkmark").font(.system(size: 16, weight: .semibold)).foregroundStyle(Brand.onAccent)
                     .frame(width: 36, height: 36).background(Brand.accent).clipShape(Circle())
             }
         }
@@ -314,7 +316,7 @@ struct ChatView: View {
             } else if Files.isImage(u) {
                 Image(systemName: "exclamationmark.triangle").font(.title2).foregroundStyle(.red)
             } else {
-                Image(systemName: "doc").font(.title2).foregroundStyle(Brand.accent)
+                Image(systemName: "doc").font(.title2).foregroundStyle(Brand.ink)
             }
         }
         .frame(width: 60, height: 60)
@@ -372,8 +374,8 @@ struct ChatView: View {
     func paste() {
         let pb = UIPasteboard.general
         if pb.hasImages, let img = pb.image {
-            if let d = img.pngData() {
-                let u = Store.stamped("粘贴图片", "png")
+            if let d = Files.jpeg(from: img) {
+                let u = Store.stamped("粘贴图片", "jpg")
                 if (try? d.write(to: u)) != nil, Files.readable(u) {
                     agent.attachments.append(Attach(url: u))
                     return
