@@ -12,10 +12,13 @@ enum Files {
 
     static func isImage(_ u: URL) -> Bool { Convert.imgExt.contains(u.pathExtension.lowercased()) }
 
-    // 系统能否把它解码成图片（按内容判断，不看扩展名）
+    // 系统能否把它解码成图片（按内容判断，不看扩展名）。ImageIO 不行时再用 UIImage 与原始数据各试一次
     static func readable(_ u: URL) -> Bool {
-        guard let s = CGImageSourceCreateWithURL(u as CFURL, nil) else { return false }
-        return CGImageSourceGetCount(s) > 0
+        if (size(u) ?? 0) == 0 { return false }
+        if let s = CGImageSourceCreateWithURL(u as CFURL, nil), CGImageSourceGetCount(s) > 0 { return true }
+        if UIImage(contentsOfFile: u.path) != nil { return true }
+        if let raw = try? Data(contentsOf: u), UIImage(data: raw) != nil { return true }
+        return false
     }
 
     private static let cache = NSCache<NSString, UIImage>()

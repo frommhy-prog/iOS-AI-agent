@@ -3,6 +3,10 @@ import UIKit
 
 // 统一的外观：暖色背景，强调色随系统深浅色变为黑或白（不再使用彩色主题）。主题只保留「跟随系统 / 浅色 / 深色」。
 enum Brand {
+    // 应用名：「知行」= 知（知识库、理解）+ 行（闹钟、任务、脚本、转换，说到做到）
+    static let name = "知行"
+    static let tagline = "会成长的口袋助理"
+
     private static func hex(_ v: Int) -> UIColor {
         UIColor(red: CGFloat((v >> 16) & 0xFF) / 255, green: CGFloat((v >> 8) & 0xFF) / 255, blue: CGFloat(v & 0xFF) / 255, alpha: 1)
     }

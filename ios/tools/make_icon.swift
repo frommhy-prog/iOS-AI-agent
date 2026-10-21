@@ -1,42 +1,46 @@
 import AppKit
 
-// 生成应用图标（1024×1024，不透明）：深海军蓝底 + TSTZ 字母 + 金色点缀
+// 生成应用图标（1024×1024，不透明）：深海蓝底 + 白色 Z 形折线一笔到底 + 金色箭头与起点光点。
+// 坐标与 Shared/BrandMark.swift 完全一致（0~1 的相对坐标，y 向下），改动要两边同步。
 let out = CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "icon.png"
 let size = 1024
+let S = CGFloat(size)
 let cs = CGColorSpaceCreateDeviceRGB()
 guard let ctx = CGContext(data: nil, width: size, height: size, bitsPerComponent: 8, bytesPerRow: 0, space: cs,
                           bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue) else { exit(1) }
 
+func P(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: x * S, y: (1 - y) * S) }
+
 // 背景渐变
 let colors = [CGColor(red: 0.06, green: 0.14, blue: 0.32, alpha: 1), CGColor(red: 0.01, green: 0.04, blue: 0.13, alpha: 1)] as CFArray
 let grad = CGGradient(colorsSpace: cs, colors: colors, locations: [0, 1])!
-ctx.drawLinearGradient(grad, start: CGPoint(x: 0, y: CGFloat(size)), end: CGPoint(x: CGFloat(size), y: 0), options: [])
+ctx.drawLinearGradient(grad, start: CGPoint(x: 0, y: S), end: CGPoint(x: S, y: 0), options: [])
 
-// 金色细弧装饰
-ctx.setStrokeColor(CGColor(red: 0.93, green: 0.74, blue: 0.36, alpha: 0.35))
-ctx.setLineWidth(10)
-ctx.addArc(center: CGPoint(x: 512, y: 512), radius: 430, startAngle: .pi * 0.15, endAngle: .pi * 0.85, clockwise: false)
+ctx.setLineWidth(S * 0.085)
+ctx.setLineCap(.round)
+ctx.setLineJoin(.round)
+
+// Z 形折线（白）
+ctx.setStrokeColor(CGColor(red: 1, green: 1, blue: 1, alpha: 1))
+ctx.move(to: P(0.25, 0.25))
+ctx.addLine(to: P(0.73, 0.25))
+ctx.addLine(to: P(0.25, 0.69))
+ctx.addLine(to: P(0.77, 0.69))
 ctx.strokePath()
 
-let gc = NSGraphicsContext(cgContext: ctx, flipped: false)
-NSGraphicsContext.saveGraphicsState()
-NSGraphicsContext.current = gc
+// 箭头（金）
+let gold = CGColor(red: 0.93, green: 0.74, blue: 0.36, alpha: 1)
+ctx.setStrokeColor(gold)
+ctx.move(to: P(0.65, 0.57))
+ctx.addLine(to: P(0.78, 0.69))
+ctx.addLine(to: P(0.65, 0.81))
+ctx.strokePath()
 
-let font = NSFont.systemFont(ofSize: 400, weight: .black)
-func letter(_ s: String, cx: CGFloat, cy: CGFloat, color: NSColor) {
-    let a = NSAttributedString(string: s, attributes: [.font: font, .foregroundColor: color])
-    let w = a.size().width
-    let y = cy - font.capHeight / 2 + font.descender
-    a.draw(at: NSPoint(x: cx - w / 2, y: y))
-}
-let white = NSColor.white
-let gold = NSColor(red: 0.93, green: 0.74, blue: 0.36, alpha: 1)
-letter("T", cx: 330, cy: 690, color: white)
-letter("S", cx: 694, cy: 690, color: white)
-letter("T", cx: 330, cy: 340, color: white)
-letter("Z", cx: 694, cy: 340, color: gold)
-
-NSGraphicsContext.restoreGraphicsState()
+// 起点光点（金）
+ctx.setFillColor(gold)
+let c = P(0.25, 0.25)
+let r = S * 0.065
+ctx.fillEllipse(in: CGRect(x: c.x - r, y: c.y - r, width: r * 2, height: r * 2))
 
 guard let img = ctx.makeImage() else { exit(1) }
 let rep = NSBitmapImageRep(cgImage: img)
