@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum AppPage: String, Identifiable {
-    case kb, tools, tasks, settings
+    case kb, tools, tasks, evolve, settings
     var id: String { rawValue }
 }
 
@@ -21,17 +21,19 @@ struct RootView: View {
             ZStack(alignment: .leading) {
                 DrawerView(width: w)
                     .frame(width: w)
+                // 注意顺序：点击遮罩必须在 offset 之前加，才会跟着对话页一起右移；
+                // 否则它会盖在侧栏上，把侧栏里所有点击都当成「收起侧栏」。
                 ChatView()
                     .frame(width: geo.size.width, height: geo.size.height)
                     .background(Brand.bg)
                     .clipShape(RoundedRectangle(cornerRadius: state.drawer ? 24 : 0, style: .continuous))
                     .shadow(color: .black.opacity(state.drawer ? 0.18 : 0), radius: 12)
-                    .offset(x: state.drawer ? w : 0)
                     .overlay {
                         if state.drawer {
                             Color.clear.contentShape(Rectangle()).onTapGesture { state.drawer = false }
                         }
                     }
+                    .offset(x: state.drawer ? w : 0)
             }
             .background(Brand.bg)
             .animation(.easeOut(duration: 0.25), value: state.drawer)
@@ -100,6 +102,7 @@ struct DrawerView: View {
                     item("books.vertical", "知识库") { open(.kb) }
                     item("square.grid.2x2", "工具箱") { open(.tools) }
                     item("clock.badge.checkmark", "任务") { open(.tasks) }
+                    item("leaf", "进化") { open(.evolve) }
                     Text("最近").font(.footnote.weight(.medium)).foregroundStyle(Brand.sub)
                         .padding(.horizontal, 18).padding(.top, 16).padding(.bottom, 4)
                     if shown.isEmpty {
@@ -189,6 +192,7 @@ struct PageSheet: View {
             case .kb: KBView()
             case .tools: ToolboxView()
             case .tasks: TasksView()
+            case .evolve: EvolveHome()
             case .settings: AppSettingsView()
             }
         }
