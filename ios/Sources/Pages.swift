@@ -61,6 +61,7 @@ struct KBView: View {
                 }
             }
             .navigationTitle("知识库")
+            .navigationBarTitleDisplayMode(.inline)
             .scrollDismissesKeyboard(.immediately)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -122,37 +123,47 @@ struct KBView: View {
 
 // MARK: 工具箱
 struct ToolboxView: View {
+    @State private var showClock = false
+
     var body: some View {
         NavigationStack {
             ScrollView {
                 LazyVGrid(columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible())], spacing: 14) {
-                    card("文件转换", "图片、PDF、表格、视频互相转换", "arrow.triangle.2.circlepath", .blue) { ConvertView() }
-                    card("脚本技能", "一句话生成脚本，自动测试并运行", "wand.and.stars", .purple) { SkillsView() }
-                    card("连接器", "连接快捷指令、Scriptable 和各种接口", "link", .orange) { ConnectorsView() }
-                    card("快捷指令", "把本 App 的动作加入系统快捷指令", "square.stack.3d.up.fill", .teal) { ShortcutsView() }
+                    card("文件转换", "图片、PDF、表格、视频互相转换", "arrow.triangle.2.circlepath") { ConvertView() }
+                    card("脚本技能", "一句话生成脚本，自动测试并运行", "wand.and.stars") { SkillsView() }
+                    card("连接器", "连接快捷指令、Scriptable 和各种接口", "link") { ConnectorsView() }
+                    card("快捷指令", "把本 App 的动作加入系统快捷指令", "square.stack.3d.up.fill") { ShortcutsView() }
+                    Button { showClock = true } label: { cardBody("系统时钟闹钟", "把闹钟写进「时钟」，并自检内置闹钟", "alarm") }
                 }
                 .padding(16)
             }
-            .background(Color(.systemGroupedBackground))
+            .background(Brand.bg)
             .navigationTitle("工具箱")
+            .navigationBarTitleDisplayMode(.inline)
+            .sheet(isPresented: $showClock) { ClockSetupView().presentationBackground(Brand.bg) }
         }
     }
 
-    func card<D: View>(_ t: String, _ s: String, _ icon: String, _ c: Color, @ViewBuilder _ dest: @escaping () -> D) -> some View {
+    func cardBody(_ t: String, _ s: String, _ icon: String) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Image(systemName: icon).font(.title2).foregroundStyle(Brand.ink)
+                .frame(width: 46, height: 46).background(Brand.userBubble)
+                .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
+            Text(t).font(.headline).foregroundStyle(Brand.ink)
+            Text(s).font(.subheadline).foregroundStyle(Brand.sub).multilineTextAlignment(.leading)
+        }
+        .frame(maxWidth: .infinity, minHeight: 150, alignment: .topLeading)
+        .padding(14)
+        .background(Brand.card)
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(Brand.line, lineWidth: 1))
+    }
+
+    func card<D: View>(_ t: String, _ s: String, _ icon: String, @ViewBuilder _ dest: @escaping () -> D) -> some View {
         NavigationLink {
             dest()
         } label: {
-            VStack(alignment: .leading, spacing: 10) {
-                Image(systemName: icon).font(.title2).foregroundStyle(.white)
-                    .frame(width: 46, height: 46).background(c)
-                    .clipShape(RoundedRectangle(cornerRadius: 13, style: .continuous))
-                Text(t).font(.headline).foregroundStyle(.primary)
-                Text(s).font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.leading)
-            }
-            .frame(maxWidth: .infinity, minHeight: 150, alignment: .topLeading)
-            .padding(14)
-            .background(Color(.secondarySystemGroupedBackground))
-            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            cardBody(t, s, icon)
         }
     }
 }
@@ -196,8 +207,8 @@ struct ConvertView: View {
                             Button { target = t } label: {
                                 Text(Self.names[t] ?? t).font(.subheadline)
                                     .frame(maxWidth: .infinity).padding(.vertical, 9)
-                                    .background(target == t ? Color.accentColor : Color(.tertiarySystemFill))
-                                    .foregroundStyle(target == t ? Color.white : Color.primary)
+                                    .background(target == t ? Brand.accent : Color(.tertiarySystemFill))
+                                    .foregroundStyle(target == t ? Brand.onAccent : Color.primary)
                                     .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                             }
                             .buttonStyle(.plain)
@@ -494,6 +505,7 @@ struct AddConnectorView: View {
                 }
             }
         }
+        .presentationBackground(Brand.bg)
     }
 }
 
@@ -574,289 +586,5 @@ struct ShortcutsView: View {
             }
         }
         .padding(.vertical, 2)
-    }
-}
-
-// MARK: 任务与进化
-struct TasksView: View {
-    @State private var tasks: [Row] = []
-    @State private var alarms: [Row] = []
-    @State private var text = ""
-    @State private var info = ""
-    @State private var busy = false
-    @State private var preparing = false
-    @State private var prepInfo = ""
-    @State private var evolving = false
-    @State private var evoInfo = ""
-
-    var body: some View {
-        NavigationStack {
-            List {
-                Section("新建") {
-                    TextField("例：明早十点叫我起床", text: $text, axis: .vertical).lineLimit(1...3)
-                    Button { create() } label: {
-                        HStack(spacing: 8) {
-                            if busy { ProgressView() }
-                            Text(busy ? "创建中…" : "创建").frame(maxWidth: .infinity)
-                        }
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .disabled(busy || text.trimmingCharacters(in: .whitespaces).isEmpty)
-                    .listRowBackground(Color.clear)
-                    if !info.isEmpty { Text(info).foregroundStyle(Color.accentColor) }
-                }
-                Section("闹钟") {
-                    if alarms.isEmpty { Text("没有闹钟").foregroundStyle(.secondary) }
-                    ForEach(alarms.indices, id: \.self) { i in
-                        HStack(spacing: 12) {
-                            Image(systemName: "alarm.fill").foregroundStyle(Color.accentColor)
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(alarms[i].s("label"))
-                                Text((alarms[i].i("rep") > 0 ? Sys.repText(alarms[i].i("rep")) + " " : "") + Sys.friendly(Date(timeIntervalSince1970: alarms[i].d("due"))))
-                                    .font(.subheadline).foregroundStyle(.secondary)
-                            }
-                        }
-                        .padding(.vertical, 3)
-                    }
-                    .onDelete { idx in
-                        for i in idx { Sys.cancelAlarm(alarms[i].s("id")) }
-                        reload()
-                    }
-                }
-                Section("定时任务") {
-                    if tasks.isEmpty { Text("没有定时任务").foregroundStyle(.secondary) }
-                    ForEach(tasks.indices, id: \.self) { i in
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(tasks[i].s("title")).font(.headline)
-                            Text((tasks[i].i("rep") > 0 ? Sys.repText(tasks[i].i("rep")) + " " : "") + Sys.friendly(Date(timeIntervalSince1970: tasks[i].d("due"))) + (tasks[i].i("state") == 1 ? " · 已完成" : " · 待执行"))
-                                .font(.subheadline).foregroundStyle(.secondary)
-                            if !tasks[i].s("result").isEmpty { Text(tasks[i].s("result")).font(.subheadline) }
-                        }
-                        .padding(.vertical, 3)
-                    }
-                    .onDelete { idx in
-                        for i in idx { Tasks.remove(tasks[i].i("id")) }
-                        reload()
-                    }
-                    Button {
-                        preparing = true
-                        prepInfo = ""
-                        Task {
-                            let n = await Tasks.refresh()
-                            prepInfo = n > 0 ? "已为 \(n) 个任务准备好内容并安排了通知" : "没有需要准备的任务"
-                            preparing = false
-                            reload()
-                        }
-                    } label: {
-                        HStack(spacing: 8) {
-                            if preparing { ProgressView() }
-                            Text(preparing ? "正在准备…" : "立即准备并安排通知")
-                        }
-                    }
-                    .disabled(preparing)
-                    if !prepInfo.isEmpty { Text(prepInfo).foregroundStyle(Color.accentColor) }
-                }
-                Section("进化") {
-                    Text("上次进化：" + (Evolve.lastTime().map { Sys.friendly($0) } ?? "尚未进行")).foregroundStyle(.secondary)
-                    Button {
-                        evolving = true
-                        evoInfo = ""
-                        Task {
-                            evoInfo = await Evolve.run(force: true)
-                            evolving = false
-                            reload()
-                        }
-                    } label: {
-                        HStack(spacing: 8) {
-                            if evolving { ProgressView() }
-                            Text(evolving ? "正在进化…" : "立即进化")
-                        }
-                    }
-                    .disabled(evolving)
-                    if !evoInfo.isEmpty { Text(evoInfo).foregroundStyle(Color.accentColor) }
-                    NavigationLink("查看进化记录") { EvolveLogView() }
-                }
-            }
-            .navigationTitle("任务")
-            .scrollDismissesKeyboard(.immediately)
-            .toolbar { ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("完成") { hideKeyboard() } } }
-            .onAppear(perform: reload)
-        }
-    }
-
-    func create() {
-        let t = text
-        hideKeyboard()
-        busy = true
-        info = ""
-        Task {
-            let r = await Router.handle(t)
-            info = r ?? "没能识别时间，请说得具体一些，比如「明早十点叫我起床」"
-            if r != nil { text = "" }
-            busy = false
-            reload()
-        }
-    }
-
-    func reload() {
-        tasks = Tasks.list()
-        alarms = Tasks.alarms()
-    }
-}
-
-struct EvolveLogView: View {
-    @State private var log: [Row] = []
-    @State private var vers: [Row] = []
-
-    var body: some View {
-        List {
-            Section("每次进化都做了什么") {
-                if log.isEmpty { Text("还没有进化记录。聊几轮之后会自动进化，也可以在「任务」页点「立即进化」。").foregroundStyle(.secondary) }
-                ForEach(log.indices, id: \.self) { i in
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(Sys.fmt(Date(timeIntervalSince1970: log[i].d("ts")))).font(.subheadline).foregroundStyle(.secondary)
-                        Text(log[i].s("summary")).font(.headline)
-                        if !log[i].s("facts").isEmpty {
-                            ForEach(log[i].s("facts").split(separator: "\n").map(String.init), id: \.self) { f in
-                                Label(f, systemImage: "brain").font(.subheadline)
-                            }
-                        }
-                    }
-                    .padding(.vertical, 4)
-                }
-            }
-            Section("系统提示版本") {
-                ForEach(vers.indices, id: \.self) { i in
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("第 \(vers[i].i("ver")) 版" + (i == 0 ? "（当前）" : "")).font(.headline)
-                        Text(vers[i].s("body")).font(.subheadline).foregroundStyle(.secondary)
-                        if i > 0 {
-                            Button("回滚到这一版") {
-                                Evolve.saveVersion(vers[i].s("body"))
-                                reload()
-                            }
-                        }
-                    }
-                    .padding(.vertical, 4)
-                }
-                if vers.isEmpty { Text("当前使用默认提示").foregroundStyle(.secondary) }
-            }
-        }
-        .navigationTitle("进化记录")
-        .navigationBarTitleDisplayMode(.inline)
-        .onAppear(perform: reload)
-    }
-
-    func reload() {
-        log = Evolve.log()
-        vers = Evolve.versions()
-    }
-}
-
-// MARK: 设置
-struct SettingsView: View {
-    @AppStorage("appearance") private var appearance = 0
-    @AppStorage("accent") private var accent = 0
-    @AppStorage("saveHistory") private var saveHistory = true
-    @AppStorage("style") private var style = 0
-    @AppStorage("autoSend") private var autoSend = false
-    @AppStorage("liveOn") private var liveOn = true
-    @State private var exportURL: URL?
-    @State private var confirmChats = false
-    @State private var confirmKB = false
-    @State private var copied = false
-
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section("外观") {
-                    Picker("主题", selection: $appearance) {
-                        Text("跟随系统").tag(0)
-                        Text("浅色").tag(1)
-                        Text("深色").tag(2)
-                    }
-                    .pickerStyle(.segmented)
-                    HStack(spacing: 14) {
-                        Text("主题色")
-                        Spacer()
-                        ForEach(0..<Theme.accents.count, id: \.self) { i in
-                            Button { accent = i } label: {
-                                Circle().fill(Theme.accents[i].1).frame(width: 28, height: 28)
-                                    .overlay { if accent == i { Image(systemName: "checkmark").font(.footnote.bold()).foregroundStyle(.white) } }
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
-                Section("对话") {
-                    Toggle("保存对话记录", isOn: $saveHistory)
-                    Picker("回答风格", selection: $style) {
-                        Text("简洁").tag(0)
-                        Text("详细").tag(1)
-                    }
-                    Toggle("语音说完后自动发送", isOn: $autoSend)
-                }
-                Section("灵动岛与实时活动") {
-                    Toggle("在灵动岛显示思考、闹钟与任务倒计时", isOn: $liveOn)
-                }
-                Section("权限") {
-                    Button { openSettings() } label: { Label("通知、闹钟、日历、麦克风等权限", systemImage: "gearshape") }
-                }
-                Section("数据") {
-                    if let u = exportURL {
-                        ShareLink(item: u) { Label("导出全部对话", systemImage: "square.and.arrow.up") }
-                    }
-                    Button(role: .destructive) { confirmChats = true } label: { Label("清空所有对话", systemImage: "trash") }
-                    Button(role: .destructive) { confirmKB = true } label: { Label("清空知识库", systemImage: "trash") }
-                }
-                Section("关于") {
-                    HStack {
-                        LogoMark(size: 48)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("TSTZ Bot").font(.headline)
-                            Text("版本 0.3").font(.subheadline).foregroundStyle(.secondary)
-                        }
-                    }
-                    .padding(.vertical, 4)
-                    HStack {
-                        Text("开发者微信")
-                        Spacer()
-                        Text("TSTZ-M").foregroundStyle(.secondary)
-                        Button { UIPasteboard.general.string = "TSTZ-M"; copied = true } label: {
-                            Image(systemName: copied ? "checkmark" : "doc.on.doc")
-                        }
-                        .buttonStyle(.borderless)
-                    }
-                }
-            }
-            .navigationTitle("设置")
-            .onAppear { exportURL = exportAll() }
-            .confirmationDialog("清空所有对话？此操作无法撤销", isPresented: $confirmChats, titleVisibility: .visible) {
-                Button("清空", role: .destructive) { Agent.shared.clearAll() }
-            }
-            .confirmationDialog("清空知识库？此操作无法撤销", isPresented: $confirmKB, titleVisibility: .visible) {
-                Button("清空", role: .destructive) {
-                    DB.shared.run("DELETE FROM chunk")
-                    DB.shared.run("DELETE FROM doc")
-                }
-            }
-        }
-    }
-
-    func openSettings() {
-        if let u = URL(string: UIApplication.openSettingsURLString) { UIApplication.shared.open(u) }
-    }
-
-    func exportAll() -> URL? {
-        var s = "# TSTZ Bot 对话记录\n\n"
-        for c in DB.shared.rows("SELECT id,title,ts FROM conv ORDER BY ts") {
-            s += "## " + c.s("title") + "（" + Sys.fmt(Date(timeIntervalSince1970: c.d("ts"))) + "）\n\n"
-            for m in DB.shared.rows("SELECT role,text FROM msg WHERE conv=? ORDER BY id", [c.i("id")]) {
-                s += (m.s("role") == "user" ? "**我**：" : "**TSTZ Bot**：") + m.s("text") + "\n\n"
-            }
-        }
-        let u = Store.dir("Outputs").appendingPathComponent("TSTZ Bot 对话记录.md")
-        try? s.write(to: u, atomically: true, encoding: .utf8)
-        return u
     }
 }
