@@ -12,7 +12,7 @@ private final class PickBox: @unchecked Sendable {
     var firstError: String { lock.lock(); defer { lock.unlock() }; return errs.first ?? "" }
 }
 
-// 从相册条目取图：依次尝试 JPEG 表示 → 其他图片表示 → 数据表示 → UIImage 对象，任何一层成功即可；全失败会带回具体错误码
+// 系统选择器的取图：依次尝试 JPEG 表示 → 其他图片表示 → 数据表示 → UIImage 对象，任何一层成功即可；全失败会带回具体错误码
 enum PhotoLoader {
     static func load(_ p: NSItemProvider, done: @escaping (Data?, String) -> Void) {
         var ids = p.registeredTypeIdentifiers.filter { UTType($0)?.conforms(to: .image) == true }
@@ -51,13 +51,13 @@ enum PhotoLoader {
     private static func tryObject(_ p: NSItemProvider, _ err: String, _ done: @escaping (Data?, String) -> Void) {
         guard p.canLoadObject(ofClass: UIImage.self) else { done(nil, err + "[不能作为图片读取]"); return }
         _ = p.loadObject(ofClass: UIImage.self) { obj, e in
-            if let ui = obj as? UIImage, let d = ui.jpegData(compressionQuality: 0.92) { done(d, ""); return }
+            if let ui = obj as? UIImage, let d = Files.jpeg(from: ui) { done(d, ""); return }
             done(nil, err + "[对象 \(e.map { desc($0) } ?? "无法解码")]")
         }
     }
 }
 
-// 相册选图：转成方向正确的标准 JPEG 并逐张校验
+// 系统相册选择器（不需要相册权限）：作为「全部相册」授权被拒绝时的备用方案
 struct PhotoPicker: UIViewControllerRepresentable {
     var onPick: ([URL]) -> Void
     var onError: (String) -> Void
@@ -104,47 +104,10 @@ struct PhotoPicker: UIViewControllerRepresentable {
             group.notify(queue: .main) {
                 let urls = box.all
                 if urls.isEmpty {
-                    self.parent.onError("图片读取失败 \(String(box.firstError.prefix(160)))。可以先在相册里点开原图让它下载完，或改用「拍照」「文件」。")
+                    self.parent.onError("图片读取失败 \(String(box.firstError.prefix(160)))。")
                 }
                 self.parent.onPick(urls)
             }
         }
-    }
-}
-
-// 拍照：拍完同样转成方向正确的 JPEG
-struct CameraPicker: UIViewControllerRepresentable {
-    var onPick: (URL?) -> Void
-
-    func makeUIViewController(context: Context) -> UIImagePickerController {
-        let p = UIImagePickerController()
-        p.sourceType = UIImagePickerController.isSourceTypeAvailable(.camera) ? .camera : .photoLibrary
-        p.delegate = context.coordinator
-        return p
-    }
-
-    func updateUIViewController(_ vc: UIImagePickerController, context: Context) {}
-
-    func makeCoordinator() -> Coordinator { Coordinator(self) }
-
-    final class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
-        let parent: CameraPicker
-        init(_ p: CameraPicker) { parent = p }
-
-        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
-            var out: URL?
-            if let img = info[.originalImage] as? UIImage, let d = img.jpegData(compressionQuality: 0.95) {
-                let tmp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString + ".jpg")
-                try? d.write(to: tmp)
-                if let jpg = Files.normalizedJPEG(from: tmp) {
-                    let dst = Store.stamped("拍照", "jpg")
-                    if (try? jpg.write(to: dst)) != nil { out = dst }
-                }
-                try? FileManager.default.removeItem(at: tmp)
-            }
-            parent.onPick(out)
-        }
-
-        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) { parent.onPick(nil) }
     }
 }
