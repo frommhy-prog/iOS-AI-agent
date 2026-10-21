@@ -48,6 +48,8 @@
 	<string>语音输入需要使用麦克风</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>保存处理后的图片和视频到相册</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>读取你的相册，选择照片发给助理识别文字或转换格式</string>
 	<key>NSRemindersFullAccessUsageDescription</key>
 	<string>助理需要为你添加提醒事项</string>
 	<key>NSSpeechRecognitionUsageDescription</key>

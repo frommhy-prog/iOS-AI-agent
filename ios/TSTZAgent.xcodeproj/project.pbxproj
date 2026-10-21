@@ -10,6 +10,7 @@
 		028F7ABDE61E46B542B37B4B /* Connectors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FEFA9DDDAD17E868ACA8C3D /* Connectors.swift */; };
 		08776F9C60355FC2E91449BE /* ChatViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36A68829C20696DA27AB54ED /* ChatViews.swift */; };
 		0AC8A978437CD4FE7F9010A7 /* Skills.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89F24A218559D43937FB9D03 /* Skills.swift */; };
+		0D2B7F6DDF3BE3AAE71BE80E /* TasksPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7EA5758BB1969A0CCAB1237 /* TasksPage.swift */; };
 		12FD0B56358C9F5E0AB36C0A /* Inputs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 538B1AE356CDE5429BD0C0FF /* Inputs.swift */; };
 		1C2617D8A34CDF3E7F4EFDCD /* BotActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = C387607AEA72EC82BAB7D840 /* BotActivity.swift */; };
 		2405425FCCFE6D2C655F6357 /* KB.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2278739C9AFDEB72BE37F77B /* KB.swift */; };
@@ -86,6 +87,7 @@
 		9B43629F12F1F786BC2B18A7 /* AgentExt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentExt.swift; sourceTree = "<group>"; };
 		9E77773F5FB905773A523861 /* Intents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Intents.swift; sourceTree = "<group>"; };
 		9EA5BECF265FC50BEC0A1A36 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A7EA5758BB1969A0CCAB1237 /* TasksPage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TasksPage.swift; sourceTree = "<group>"; };
 		ACBF423F7B5759B73346F23C /* Agent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Agent.swift; sourceTree = "<group>"; };
 		B22543CF5123098D67A28DBF /* Live.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Live.swift; sourceTree = "<group>"; };
 		BA36910C58D9A68F40346043 /* Brand.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Brand.swift; sourceTree = "<group>"; };
@@ -140,6 +142,7 @@
 				89F24A218559D43937FB9D03 /* Skills.swift */,
 				212AB59CCC01B37C55962AA5 /* Sys.swift */,
 				768C409EAE9C5BBFF33875C9 /* Tasks.swift */,
+				A7EA5758BB1969A0CCAB1237 /* TasksPage.swift */,
 				05408064C5C05006B3B3FC2B /* Tools.swift */,
 				621A2DE7A16D900DCDF95AEB /* Views.swift */,
 			);
@@ -299,6 +302,7 @@
 				0AC8A978437CD4FE7F9010A7 /* Skills.swift in Sources */,
 				322B3BC1D66B1216F50B6750 /* Sys.swift in Sources */,
 				28A20CDFB92F271ED269FB77 /* Tasks.swift in Sources */,
+				0D2B7F6DDF3BE3AAE71BE80E /* TasksPage.swift in Sources */,
 				7FC7A04B4A9080AB60333E65 /* Tools.swift in Sources */,
 				47C97D24B171177E5A6C4B71 /* Views.swift in Sources */,
 			);
@@ -384,7 +388,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 0.5;
+				MARKETING_VERSION = 0.6;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Hao-Yi-Miao.TSTZ-Agent.Live";
 				PRODUCT_NAME = TSTZLive;
 				SDKROOT = iphoneos;
@@ -403,7 +407,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 0.5;
+				MARKETING_VERSION = 0.6;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Hao-Yi-Miao.TSTZ-Agent.Live";
 				PRODUCT_NAME = TSTZLive;
 				SDKROOT = iphoneos;
@@ -423,7 +427,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.5;
+				MARKETING_VERSION = 0.6;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Hao-Yi-Miao.TSTZ-Agent";
 				PRODUCT_NAME = TSTZBot;
 				SDKROOT = iphoneos;
@@ -508,7 +512,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.5;
+				MARKETING_VERSION = 0.6;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.Hao-Yi-Miao.TSTZ-Agent";
 				PRODUCT_NAME = TSTZBot;
 				SDKROOT = iphoneos;

@@ -1,4 +1,3 @@
 Xcode 26.6
 Build version 17F113
-/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/Shell.swift:195:27: error: cannot find 'EvolveHome' in scope
-RESULT: FAILED
+RESULT: SUCCEEDED
