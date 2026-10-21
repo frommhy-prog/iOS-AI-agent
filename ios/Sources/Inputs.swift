@@ -4,7 +4,7 @@ import Speech
 import AVFoundation
 import Vision
 
-// 语音输入：边说边出文字，结束后自动填入输入框
+// 语音输入：边说边出文字，结束后自动填入输入框；聆听时灵动岛显示「聆听中」
 final class Voice: ObservableObject {
     @Published var listening = false
     @Published var live = ""
@@ -31,10 +31,10 @@ final class Voice: ObservableObject {
         }
         SFSpeechRecognizer.requestAuthorization { st in
             DispatchQueue.main.async {
-                guard st == .authorized else { self.error = "请在 设置 → TSTZ Bot 里允许语音识别"; return }
+                guard st == .authorized else { self.error = "请在 设置 → \(Brand.name) 里允许语音识别"; return }
                 AVAudioApplication.requestRecordPermission { ok in
                     DispatchQueue.main.async {
-                        guard ok else { self.error = "请在 设置 → TSTZ Bot 里允许麦克风"; return }
+                        guard ok else { self.error = "请在 设置 → \(Brand.name) 里允许麦克风"; return }
                         self.begin()
                     }
                 }
@@ -68,6 +68,7 @@ final class Voice: ObservableObject {
             engine.prepare()
             try engine.start()
             listening = true
+            Live.listening(true)
             limit?.invalidate()
             limit = Timer.scheduledTimer(withTimeInterval: 60, repeats: false) { [weak self] _ in self?.stop() }
             task = rec?.recognitionTask(with: r) { [weak self] res, err in
@@ -88,6 +89,7 @@ final class Voice: ObservableObject {
             }
         } catch {
             listening = false
+            Live.listening(false)
             self.error = "无法启动麦克风：\(error.localizedDescription)"
         }
     }
@@ -113,6 +115,7 @@ final class Voice: ObservableObject {
         listening = false
         level = 0
         limit?.invalidate()
+        Live.listening(false)
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         if final.isEmpty && error.isEmpty { error = "没有听到声音，请再试一次" }
         onFinished?(final)

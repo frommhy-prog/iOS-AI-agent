@@ -129,7 +129,6 @@ struct ShareView: View {
     @ObservedObject var agent = Agent.shared
     @Environment(\.dismiss) private var dismiss
     @State private var scope = 0
-    @State private var dark = false
     @State private var url: URL?
     @State private var image: UIImage?
     @State private var saved = false
@@ -142,7 +141,7 @@ struct ShareView: View {
 
     private var linkTitle: String {
         if let t = agent.msgs.first(where: { $0.role == "user" })?.text, !t.isEmpty { return String(t.prefix(20)) }
-        return Brand.name + " 对话"
+        return Brand.name + " Chat"
     }
 
     var body: some View {
@@ -185,18 +184,13 @@ struct ShareView: View {
                         Text("链接 90 天有效，知道链接的人都能看到这段对话。").font(.footnote).foregroundStyle(Brand.sub).frame(maxWidth: .infinity, alignment: .leading)
                     }
 
-                    Picker("样式", selection: $dark) {
-                        Text("浅色").tag(false)
-                        Text("深色").tag(true)
-                    }
-                    .pickerStyle(.segmented)
                     if let image {
                         Image(uiImage: image).resizable().scaledToFit()
                             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                             .shadow(color: .black.opacity(0.15), radius: 10, y: 4)
                     }
                     if let url, let image {
-                        ShareLink(item: url, preview: SharePreview(Brand.name + " 对话", image: Image(uiImage: image))) {
+                        ShareLink(item: url, preview: SharePreview(Brand.name + " Chat", image: Image(uiImage: image))) {
                             Label("分享图片到微信、QQ、微博等", systemImage: "photo").frame(maxWidth: .infinity)
                         }
                         .buttonStyle(.bordered)
@@ -222,7 +216,7 @@ struct ShareView: View {
             .navigationTitle("分享对话")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("完成") { dismiss() } } }
-            .task(id: "\(scope)-\(dark)") { render() }
+            .task(id: scope) { render() }
             .onChange(of: scope) { _, _ in link = nil; linkErr = "" }
         }
         .presentationBackground(Brand.bg)
@@ -247,10 +241,10 @@ struct ShareView: View {
     }
 
     @MainActor func render() {
-        let r = ImageRenderer(content: ShareCard(msgs: chosen, dark: dark))
+        let r = ImageRenderer(content: ShareCard(msgs: chosen))
         r.scale = 3
         guard let img = r.uiImage, let d = img.pngData() else { return }
-        let u = Store.dir("Outputs").appendingPathComponent(Brand.name + " 对话.png")
+        let u = Store.dir("Outputs").appendingPathComponent(Brand.name + " Chat.png")
         try? d.write(to: u)
         image = img
         url = u
@@ -258,44 +252,68 @@ struct ShareView: View {
     }
 }
 
+// 分享图片：按 OSVIA 设计包的「对话分享图片」排版——深灰黑底、荷绿点缀、用户气泡靠右、助理回答在带边框的卡片里，底部开发者微信
 struct ShareCard: View {
     let msgs: [Msg]
-    let dark: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 10) {
-                LogoMark(size: 42)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(Brand.name).font(.headline)
-                    Text(Sys.fmtFull(Date())).font(.footnote).foregroundStyle(.secondary)
-                }
-                Spacer()
-            }
-            ForEach(msgs) { m in
-                let me = m.role == "user"
-                HStack {
-                    if me { Spacer(minLength: 40) }
-                    Text(m.text.isEmpty ? "[文件]" : String(m.text.prefix(400)))
-                        .font(.subheadline)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 9)
-                        .background(me ? (dark ? Color.white : Color.black) : (dark ? Color.white.opacity(0.1) : Color.black.opacity(0.06)))
-                        .foregroundStyle(me ? (dark ? Color.black : Color.white) : (dark ? Color.white : Color.black))
-                        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    if !me { Spacer(minLength: 40) }
-                }
-            }
-            Divider()
+        VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("由「\(Brand.name)」生成").font(.footnote).foregroundStyle(.secondary)
+                HStack(spacing: 10) {
+                    BrandGlyph(size: 30)
+                    Text(Brand.name).font(.system(size: 19, weight: .bold)).foregroundStyle(BrandPalette.ink)
+                }
                 Spacer()
-                Label("开发者微信 TSTZ-M", systemImage: "message.fill").font(.footnote.weight(.semibold))
+                Text("SHARED CHAT").font(.system(size: 11)).tracking(1).foregroundStyle(BrandPalette.sub)
             }
+            Text("A clearer way to\nget things done.")
+                .font(.system(size: 27, weight: .bold))
+                .foregroundStyle(BrandPalette.ink)
+                .lineSpacing(2)
+                .padding(.top, 24)
+            Rectangle().fill(BrandPalette.line).frame(height: 1).padding(.top, 18).padding(.bottom, 18)
+
+            VStack(spacing: 12) {
+                ForEach(msgs) { m in
+                    if m.role == "user" {
+                        HStack {
+                            Spacer(minLength: 56)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("USER").font(.system(size: 10)).tracking(0.5).foregroundStyle(BrandPalette.mint)
+                                Text(m.text.isEmpty ? "[文件]" : String(m.text.prefix(300)))
+                                    .font(.system(size: 15))
+                                    .foregroundStyle(BrandPalette.ink)
+                            }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .background(BrandPalette.bubble)
+                            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        }
+                    } else {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(Brand.name).font(.system(size: 14, weight: .bold)).foregroundStyle(BrandPalette.mint)
+                            Text(m.text.isEmpty ? "[文件]" : String(m.text.prefix(500)))
+                                .font(.system(size: 15))
+                                .foregroundStyle(BrandPalette.ink)
+                                .lineSpacing(5)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(18)
+                        .background(BrandPalette.panel)
+                        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(BrandPalette.line, lineWidth: 1))
+                    }
+                }
+            }
+
+            Rectangle().fill(BrandPalette.line).frame(height: 1).padding(.top, 26).padding(.bottom, 16)
+            Text("Made with \(Brand.name)").font(.system(size: 13)).foregroundStyle(BrandPalette.sub)
+            Text("Developer WeChat: TSTZ-M").font(.system(size: 16, weight: .bold)).foregroundStyle(BrandPalette.mint).padding(.top, 6)
+            Text("SEARCH  ·  THINK  ·  ACT").font(.system(size: 10)).tracking(1).foregroundStyle(BrandPalette.sub).padding(.top, 26)
         }
-        .padding(20)
-        .frame(width: 390)
-        .background(dark ? Color(red: 0.07, green: 0.08, blue: 0.11) : Color.white)
-        .environment(\.colorScheme, dark ? .dark : .light)
+        .padding(24)
+        .frame(width: 360, alignment: .leading)
+        .background(BrandPalette.bg)
+        .environment(\.colorScheme, .dark)
     }
 }
