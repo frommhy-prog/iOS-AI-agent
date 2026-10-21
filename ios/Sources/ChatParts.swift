@@ -45,7 +45,7 @@ struct ThinkingView: View {
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: "sparkle")
-                .foregroundStyle(Brand.accent)
+                .foregroundStyle(Brand.ink)
                 .rotationEffect(.degrees(spin ? 360 : 0))
                 .animation(.linear(duration: 2).repeatForever(autoreverses: false), value: spin)
             Text("思考中…").foregroundStyle(Brand.sub)
@@ -221,8 +221,8 @@ struct ShareCard: View {
                         .font(.subheadline)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 9)
-                        .background(me ? Brand.accent : (dark ? Color.white.opacity(0.1) : Color.black.opacity(0.06)))
-                        .foregroundStyle(me ? Color.white : (dark ? Color.white : Color.black))
+                        .background(me ? (dark ? Color.white : Color.black) : (dark ? Color.white.opacity(0.1) : Color.black.opacity(0.06)))
+                        .foregroundStyle(me ? (dark ? Color.black : Color.white) : (dark ? Color.white : Color.black))
                         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                     if !me { Spacer(minLength: 40) }
                 }
