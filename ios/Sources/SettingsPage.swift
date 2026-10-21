@@ -34,12 +34,12 @@ struct AppSettingsView: View {
                     .pickerStyle(.segmented)
                 }
                 Section("对话") {
-                    Toggle("保存对话记录", isOn: $saveHistory)
+                    Toggle("保存对话记录", isOn: $saveHistory).toggleStyle(SwitchToggleStyle(tint: .green))
                     Picker("回答风格", selection: $style) {
                         Text("简洁").tag(0)
                         Text("详细").tag(1)
                     }
-                    Toggle("语音说完后自动发送", isOn: $autoSend)
+                    Toggle("语音说完后自动发送", isOn: $autoSend).toggleStyle(SwitchToggleStyle(tint: .green))
                     VStack(alignment: .leading, spacing: 4) {
                         Text("本机模型")
                         Text(modelStatus).font(.footnote).foregroundStyle(.secondary)
@@ -49,10 +49,10 @@ struct AppSettingsView: View {
                     Button { showClock = true } label: { Label("系统时钟闹钟与自检", systemImage: "alarm") }
                 }
                 Section("灵动岛与实时活动") {
-                    Toggle("在灵动岛显示思考、闹钟与任务倒计时", isOn: $liveOn)
+                    Toggle("在灵动岛显示思考、闹钟与任务倒计时", isOn: $liveOn).toggleStyle(SwitchToggleStyle(tint: .green))
                 }
                 Section("权限") {
-                    Button { openSettings() } label: { Label("通知、闹钟、日历、麦克风等权限", systemImage: "gearshape") }
+                    Button { openSettings() } label: { Label("通知、闹钟、照片、相机、麦克风等权限", systemImage: "gearshape") }
                 }
                 Section("数据") {
                     if let u = exportURL {
@@ -66,7 +66,7 @@ struct AppSettingsView: View {
                         LogoMark(size: 48)
                         VStack(alignment: .leading, spacing: 2) {
                             Text("TSTZ Bot").font(.headline)
-                            Text("版本 0.5").font(.subheadline).foregroundStyle(.secondary)
+                            Text("版本 0.6").font(.subheadline).foregroundStyle(.secondary)
                         }
                     }
                     .padding(.vertical, 4)
