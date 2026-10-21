@@ -62,11 +62,11 @@ struct AppSettingsView: View {
                     Button(role: .destructive) { confirmKB = true } label: { Label("清空知识库", systemImage: "trash") }
                 }
                 Section("关于") {
-                    HStack {
+                    HStack(spacing: 12) {
                         LogoMark(size: 48)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("TSTZ Bot").font(.headline)
-                            Text("版本 0.6").font(.subheadline).foregroundStyle(.secondary)
+                            Text(Brand.name).font(.headline)
+                            Text(Brand.tagline + " · 版本 0.7").font(.subheadline).foregroundStyle(.secondary)
                         }
                     }
                     .padding(.vertical, 4)
@@ -103,14 +103,14 @@ struct AppSettingsView: View {
     }
 
     func exportAll() -> URL? {
-        var s = "# TSTZ Bot 对话记录\n\n"
+        var s = "# " + Brand.name + " 对话记录\n\n"
         for c in DB.shared.rows("SELECT id,title,ts FROM conv ORDER BY ts") {
             s += "## " + c.s("title") + "（" + Sys.fmt(Date(timeIntervalSince1970: c.d("ts"))) + "）\n\n"
             for m in DB.shared.rows("SELECT role,text FROM msg WHERE conv=? ORDER BY id", [c.i("id")]) {
-                s += (m.s("role") == "user" ? "**我**：" : "**TSTZ Bot**：") + m.s("text") + "\n\n"
+                s += (m.s("role") == "user" ? "**我**：" : "**" + Brand.name + "**：") + m.s("text") + "\n\n"
             }
         }
-        let u = Store.dir("Outputs").appendingPathComponent("TSTZ Bot 对话记录.md")
+        let u = Store.dir("Outputs").appendingPathComponent(Brand.name + " 对话记录.md")
         try? s.write(to: u, atomically: true, encoding: .utf8)
         return u
     }

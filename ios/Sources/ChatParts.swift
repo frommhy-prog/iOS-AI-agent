@@ -124,7 +124,7 @@ struct MessageView: View {
     }
 }
 
-// MARK: 分享对话（图片 / 文字）
+// MARK: 分享对话（链接 / 图片 / 文字）
 struct ShareView: View {
     @ObservedObject var agent = Agent.shared
     @Environment(\.dismiss) private var dismiss
@@ -133,8 +133,17 @@ struct ShareView: View {
     @State private var url: URL?
     @State private var image: UIImage?
     @State private var saved = false
+    @State private var linking = false
+    @State private var link: URL?
+    @State private var linkErr = ""
+    @State private var linkCopied = false
 
     var chosen: [Msg] { scope == 1 ? Array(agent.msgs.suffix(2)) : Array(agent.msgs.suffix(30)) }
+
+    private var linkTitle: String {
+        if let t = agent.msgs.first(where: { $0.role == "user" })?.text, !t.isEmpty { return String(t.prefix(20)) }
+        return Brand.name + " 对话"
+    }
 
     var body: some View {
         NavigationStack {
@@ -145,6 +154,37 @@ struct ShareView: View {
                         Text("最近一轮").tag(1)
                     }
                     .pickerStyle(.segmented)
+
+                    // 一键发送对话链接：生成网页链接后直接弹出系统分享面板
+                    Button { sendLink() } label: {
+                        HStack(spacing: 8) {
+                            if linking { ProgressView() } else { Image(systemName: "link") }
+                            Text(linking ? "正在生成链接…" : (link == nil ? "发送对话链接" : "重新生成并发送链接"))
+                        }
+                        .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .disabled(linking)
+                    if !linkErr.isEmpty {
+                        Text(linkErr).font(.footnote).foregroundStyle(.red).frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    if let link {
+                        HStack(spacing: 10) {
+                            Text(link.absoluteString).font(.footnote).foregroundStyle(Brand.sub).lineLimit(1).truncationMode(.middle)
+                            Spacer(minLength: 8)
+                            Button {
+                                UIPasteboard.general.string = link.absoluteString
+                                linkCopied = true
+                            } label: { Image(systemName: linkCopied ? "checkmark" : "doc.on.doc") }
+                            ShareLink(item: link) { Image(systemName: "square.and.arrow.up") }
+                        }
+                        .padding(12)
+                        .background(Brand.card)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        Text("链接 90 天有效，知道链接的人都能看到这段对话。").font(.footnote).foregroundStyle(Brand.sub).frame(maxWidth: .infinity, alignment: .leading)
+                    }
+
                     Picker("样式", selection: $dark) {
                         Text("浅色").tag(false)
                         Text("深色").tag(true)
@@ -156,10 +196,10 @@ struct ShareView: View {
                             .shadow(color: .black.opacity(0.15), radius: 10, y: 4)
                     }
                     if let url, let image {
-                        ShareLink(item: url, preview: SharePreview("TSTZ Bot 对话", image: Image(uiImage: image))) {
-                            Label("分享图片到微信、QQ、微博等", systemImage: "square.and.arrow.up").frame(maxWidth: .infinity)
+                        ShareLink(item: url, preview: SharePreview(Brand.name + " 对话", image: Image(uiImage: image))) {
+                            Label("分享图片到微信、QQ、微博等", systemImage: "photo").frame(maxWidth: .infinity)
                         }
-                        .buttonStyle(.borderedProminent)
+                        .buttonStyle(.bordered)
                         .controlSize(.large)
                         Button {
                             UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
@@ -183,15 +223,34 @@ struct ShareView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("完成") { dismiss() } } }
             .task(id: "\(scope)-\(dark)") { render() }
+            .onChange(of: scope) { _, _ in link = nil; linkErr = "" }
         }
         .presentationBackground(Brand.bg)
+    }
+
+    func sendLink() {
+        linking = true
+        linkErr = ""
+        linkCopied = false
+        let ms = chosen
+        let t = linkTitle
+        Task {
+            let r = await ShareService.publish(title: t, msgs: ms)
+            linking = false
+            guard let u = r.0 else { linkErr = r.1; return }
+            link = u
+            UIPasteboard.general.string = u.absoluteString
+            linkCopied = true
+            let vc = UIActivityViewController(activityItems: [u], applicationActivities: nil)
+            UIApplication.shared.topVC?.present(vc, animated: true)
+        }
     }
 
     @MainActor func render() {
         let r = ImageRenderer(content: ShareCard(msgs: chosen, dark: dark))
         r.scale = 3
         guard let img = r.uiImage, let d = img.pngData() else { return }
-        let u = Store.dir("Outputs").appendingPathComponent("TSTZ Bot 对话.png")
+        let u = Store.dir("Outputs").appendingPathComponent(Brand.name + " 对话.png")
         try? d.write(to: u)
         image = img
         url = u
@@ -208,7 +267,7 @@ struct ShareCard: View {
             HStack(spacing: 10) {
                 LogoMark(size: 42)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("TSTZ Bot").font(.headline)
+                    Text(Brand.name).font(.headline)
                     Text(Sys.fmtFull(Date())).font(.footnote).foregroundStyle(.secondary)
                 }
                 Spacer()
@@ -229,7 +288,7 @@ struct ShareCard: View {
             }
             Divider()
             HStack {
-                Text("由 TSTZ Bot 生成").font(.footnote).foregroundStyle(.secondary)
+                Text("由「\(Brand.name)」生成").font(.footnote).foregroundStyle(.secondary)
                 Spacer()
                 Label("开发者微信 TSTZ-M", systemImage: "message.fill").font(.footnote.weight(.semibold))
             }
