@@ -1,37 +1,103 @@
 import ActivityKit
 import Foundation
 
-// 灵动岛 / 锁屏实时活动：思考中、闹钟与任务倒计时
+// 灵动岛 / 锁屏实时活动：聆听、思考、搜索、执行、完成，以及闹钟与任务倒计时。
+// 所有操作排成一条队列依次执行，避免「结束」和「更新」互相抢先。
 enum Live {
+    enum Phase: String {
+        case listening, thinking, searching, working, done
+
+        var text: String {
+            switch self {
+            case .listening: return "聆听中"
+            case .thinking: return "思考中"
+            case .searching: return "正在搜索网页"
+            case .working: return "正在执行任务"
+            case .done: return "任务已完成"
+            }
+        }
+    }
+
     private static var enabled: Bool {
         (UserDefaults.standard.object(forKey: "liveOn") as? Bool ?? true) && ActivityAuthorizationInfo().areActivitiesEnabled
     }
 
-    private static func start(kind: String, title: String, subtitle: String, end: Date?) {
+    private static let lock = NSLock()
+    private static var last: Task<Void, Never>?
+
+    private static func enqueue(_ op: @escaping () async -> Void) {
+        lock.lock()
+        let prev = last
+        last = Task {
+            _ = await prev?.value
+            await op()
+        }
+        lock.unlock()
+    }
+
+    private static func assistant() -> Activity<BotActivityAttributes>? {
+        Activity<BotActivityAttributes>.activities.first(where: { $0.attributes.kind == "think" })
+    }
+
+    // 切换到某个状态（已有就更新，没有就新建）
+    static func set(_ p: Phase, _ subtitle: String? = nil) {
         guard enabled else { return }
-        Task {
-            for a in Activity<BotActivityAttributes>.activities where a.attributes.kind == kind {
-                await a.end(nil, dismissalPolicy: .immediate)
-            }
-            let st = BotActivityAttributes.ContentState(title: title, subtitle: subtitle, end: end)
-            let content = ActivityContent(state: st, staleDate: (end ?? Date()).addingTimeInterval(end == nil ? 180 : 120))
-            _ = try? Activity.request(attributes: BotActivityAttributes(kind: kind), content: content, pushType: nil)
-        }
-    }
-
-    private static func stop(kind: String) {
-        Task {
-            for a in Activity<BotActivityAttributes>.activities where a.attributes.kind == kind {
-                await a.end(nil, dismissalPolicy: .immediate)
+        enqueue {
+            let st = BotActivityAttributes.ContentState(title: Brand.name, subtitle: subtitle ?? p.text, end: nil, phase: p.rawValue)
+            let content = ActivityContent(state: st, staleDate: Date().addingTimeInterval(180))
+            if let a = assistant() {
+                await a.update(content)
+            } else {
+                _ = try? Activity.request(attributes: BotActivityAttributes(kind: "think"), content: content, pushType: nil)
             }
         }
     }
 
+    // 语音输入：开始时显示「聆听中」，结束时如果还停在聆听状态就收起
+    static func listening(_ on: Bool) {
+        if on {
+            set(.listening)
+        } else {
+            guard enabled else { return }
+            enqueue {
+                if let a = assistant(), a.content.state.phase == Phase.listening.rawValue {
+                    await a.end(nil, dismissalPolicy: .immediate)
+                }
+            }
+        }
+    }
+
+    // 兼容旧调用：开始思考 / 思考结束（结束时先显示「任务已完成」两秒再收起）
     static func thinking(_ on: Bool) {
-        if on { start(kind: "think", title: "TSTZ Bot", subtitle: "正在思考…", end: nil) } else { stop(kind: "think") }
+        if on { set(.thinking) } else { finish() }
+    }
+
+    static func finish() {
+        guard enabled else { return }
+        enqueue {
+            guard let a = assistant() else { return }
+            let st = BotActivityAttributes.ContentState(title: Brand.name, subtitle: Phase.done.text, end: nil, phase: Phase.done.rawValue)
+            await a.update(ActivityContent(state: st, staleDate: Date().addingTimeInterval(30)))
+        }
+        Task {
+            try? await Task.sleep(nanoseconds: 2_500_000_000)
+            enqueue {
+                if let a = assistant(), a.content.state.phase == Phase.done.rawValue {
+                    await a.end(nil, dismissalPolicy: .immediate)
+                }
+            }
+        }
     }
 
     static func timer(title: String, subtitle: String, end: Date) {
-        start(kind: "timer", title: title, subtitle: subtitle, end: end)
+        guard enabled else { return }
+        enqueue {
+            for a in Activity<BotActivityAttributes>.activities where a.attributes.kind == "timer" {
+                await a.end(nil, dismissalPolicy: .immediate)
+            }
+            let st = BotActivityAttributes.ContentState(title: title, subtitle: subtitle, end: end, phase: "timer")
+            let content = ActivityContent(state: st, staleDate: end.addingTimeInterval(120))
+            _ = try? Activity.request(attributes: BotActivityAttributes(kind: "timer"), content: content, pushType: nil)
+        }
     }
 }

@@ -29,7 +29,7 @@ targets:
     info:
       path: Config/Info.plist
       properties:
-        CFBundleDisplayName: 知行
+        CFBundleDisplayName: OSVIA
         UILaunchScreen: {}
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
@@ -70,6 +70,6 @@ targets:
     info:
       path: Config/LiveInfo.plist
       properties:
-        CFBundleDisplayName: 知行
+        CFBundleDisplayName: OSVIA
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
