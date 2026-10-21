@@ -21,7 +21,7 @@ extension Files {
 }
 
 extension UIApplication {
-    // 当前最上层的视图控制器（用于弹出系统的「管理所选照片」）
+    // 当前最上层的视图控制器（用于弹出系统的「管理所选照片」「分享」）
     var topVC: UIViewController? {
         let scenes = connectedScenes.compactMap { $0 as? UIWindowScene }
         let scene = scenes.first(where: { $0.activationState == .foregroundActive }) ?? scenes.first
@@ -146,7 +146,7 @@ struct GalleryPicker: View {
         VStack(spacing: 14) {
             Image(systemName: "photo.on.rectangle.angled").font(.system(size: 40)).foregroundStyle(Brand.sub)
             Text("没有相册权限").font(.headline)
-            Text("到 设置 → TSTZ Bot → 照片，选择「所有照片」，就能看到整个相册。").font(.subheadline).foregroundStyle(Brand.sub).multilineTextAlignment(.center)
+            Text("到 设置 → \(Brand.name) → 照片，选择「所有照片」，就能看到整个相册。").font(.subheadline).foregroundStyle(Brand.sub).multilineTextAlignment(.center)
             Button("打开设置") { openSettings() }.buttonStyle(.borderedProminent)
             Button("改用系统选择器（无需授权）") { useSystem = true }
         }
@@ -184,49 +184,28 @@ struct GalleryPicker: View {
         }
     }
 
+    // 确认：逐张取图（原图数据 → 渲染图 → 资源数据）→ 写入文件，失败会在提示里带上具体错误码
     func confirm() {
         let picked = selected.compactMap { id in assets.first(where: { $0.localIdentifier == id }) }
         working = true
         Task {
             var urls: [URL] = []
             var err = ""
-            let stamp = Store.stamped("照片", "jpg").deletingPathExtension().lastPathComponent
+            let stamp = Files.stampText()
             for (i, a) in picked.enumerated() {
-                let r = await Self.load(a)
-                if let data = r.0 {
-                    let dst = Store.dir("Inbox").appendingPathComponent("\(stamp)-\(i + 1).jpg")
-                    if (try? data.write(to: dst)) != nil, Files.readable(dst) { urls.append(dst) } else { err = "保存失败" }
-                } else {
-                    err = r.1
-                }
+                let r = await AssetLoader.jpeg(a)
+                guard let data = r.0 else { err = r.1; continue }
+                let s = Files.save(data, name: "照片-\(stamp)-\(i + 1).jpg")
+                if let u = s.url { urls.append(u) } else { err = s.error }
             }
             working = false
-            if urls.isEmpty { onError("图片读取失败（\(err)）。可以先在相册里点开这张图让它下载完整，再试一次。") }
+            if urls.isEmpty {
+                onError("图片读取失败（\(String(err.prefix(140)))）。可以先在相册里点开这张图让它下载完整，再试一次。")
+            } else if urls.count < picked.count {
+                onError("有 \(picked.count - urls.count) 张没能读取（\(String(err.prefix(100)))）")
+            }
             onPick(urls)
             dismiss()
-        }
-    }
-
-    // 取一张高质量图（允许从 iCloud 下载），返回 JPEG 数据或错误码
-    static func load(_ a: PHAsset) async -> (Data?, String) {
-        await withCheckedContinuation { cont in
-            let o = PHImageRequestOptions()
-            o.deliveryMode = .highQualityFormat
-            o.resizeMode = .fast
-            o.isNetworkAccessAllowed = true
-            o.isSynchronous = false
-            var finished = false
-            PHImageManager.default().requestImage(for: a, targetSize: CGSize(width: 3072, height: 3072), contentMode: .aspectFit, options: o) { img, info in
-                if (info?[PHImageResultIsDegradedKey] as? Bool) == true { return }
-                if finished { return }
-                finished = true
-                if let img, let d = Files.jpeg(from: img) {
-                    cont.resume(returning: (d, ""))
-                } else {
-                    let e = (info?[PHImageErrorKey] as? NSError).map { "\($0.domain) \($0.code)" } ?? "没有返回图片"
-                    cont.resume(returning: (nil, e))
-                }
-            }
         }
     }
 }
@@ -259,13 +238,8 @@ struct CameraPicker: UIViewControllerRepresentable {
                 parent.onPick(nil, "照片转换失败")
                 return
             }
-            let dst = Store.stamped("拍照", "jpg")
-            do {
-                try d.write(to: dst)
-                parent.onPick(dst, nil)
-            } catch {
-                parent.onPick(nil, "照片保存失败：\(error.localizedDescription)")
-            }
+            let s = Files.save(d, name: "拍照-\(Files.stampText()).jpg")
+            if let u = s.url { parent.onPick(u, nil) } else { parent.onPick(nil, "照片保存失败（\(s.error)）") }
         }
 
         func imagePickerControllerDidCancel(_ picker: UIImagePickerController) { parent.onPick(nil, nil) }

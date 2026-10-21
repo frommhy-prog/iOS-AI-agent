@@ -78,28 +78,10 @@ func hideKeyboard() {
     UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
 }
 
-// 应用标志：TSTZ 字母 + 海军蓝与金色
+// 应用标志：深海蓝底 + 白色 Z 形折线 + 金色箭头（图形定义在 Shared/BrandMark.swift，与桌面图标、灵动岛共用）
 struct LogoMark: View {
     var size: CGFloat = 64
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: size * 0.225, style: .continuous)
-                .fill(LinearGradient(colors: [Color(red: 0.06, green: 0.14, blue: 0.32), Color(red: 0.01, green: 0.04, blue: 0.13)],
-                                     startPoint: .topLeading, endPoint: .bottomTrailing))
-            VStack(spacing: 0) {
-                HStack(spacing: 0) { letter("T", .white); letter("S", .white) }
-                HStack(spacing: 0) { letter("T", .white); letter("Z", Theme.gold) }
-            }
-        }
-        .frame(width: size, height: size)
-    }
-
-    private func letter(_ s: String, _ c: Color) -> some View {
-        Text(s)
-            .font(.system(size: size * 0.34, weight: .black, design: .rounded))
-            .foregroundStyle(c)
-            .frame(width: size * 0.4, height: size * 0.4)
-    }
+    var body: some View { BrandMark(size: size) }
 }
 
 // 文件卡片：图片显示缩略图（读不出来会明确提示），其他显示类型与大小

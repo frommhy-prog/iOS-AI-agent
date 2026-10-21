@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum AppPage: String, Identifiable {
-    case kb, tools, tasks, evolve, settings
+    case kb, tools, tasks, digest, evolve, settings
     var id: String { rawValue }
 }
 
@@ -75,7 +75,7 @@ struct DrawerView: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 10) {
                 LogoMark(size: 34)
-                Text("TSTZ Bot").font(.system(size: 20, weight: .semibold, design: .serif)).foregroundStyle(Brand.ink)
+                Text(Brand.name).font(.system(size: 20, weight: .semibold, design: .serif)).foregroundStyle(Brand.ink)
                 Spacer()
             }
             .padding(.horizontal, 18)
@@ -102,6 +102,7 @@ struct DrawerView: View {
                     item("books.vertical", "知识库") { open(.kb) }
                     item("square.grid.2x2", "工具箱") { open(.tools) }
                     item("clock.badge.checkmark", "任务") { open(.tasks) }
+                    item("sun.max", "今日回顾") { open(.digest) }
                     item("leaf", "进化") { open(.evolve) }
                     Text("最近").font(.footnote.weight(.medium)).foregroundStyle(Brand.sub)
                         .padding(.horizontal, 18).padding(.top, 16).padding(.bottom, 4)
@@ -181,10 +182,9 @@ struct DrawerView: View {
     }
 }
 
-// 从侧栏打开的功能页：向下滑或点左上角收起
+// 从侧栏打开的功能页：关闭按钮由 PageChrome.swift 里的 NavigationStack 放在导航栏左侧，不再叠在系统返回键上
 struct PageSheet: View {
     let page: AppPage
-    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         Group {
@@ -192,24 +192,14 @@ struct PageSheet: View {
             case .kb: KBView()
             case .tools: ToolboxView()
             case .tasks: TasksView()
+            case .digest: DigestView()
             case .evolve: EvolveHome()
             case .settings: AppSettingsView()
             }
         }
+        .environment(\.isPageRoot, true)
         .scrollContentBackground(.hidden)
         .background(Brand.bg.ignoresSafeArea())
         .presentationBackground(Brand.bg)
-        .overlay(alignment: .topLeading) {
-            Button { dismiss() } label: {
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(Brand.ink)
-                    .frame(width: 34, height: 34)
-                    .background(Brand.card.opacity(0.9))
-                    .clipShape(Circle())
-            }
-            .padding(.leading, 14)
-            .padding(.top, 8)
-        }
     }
 }
