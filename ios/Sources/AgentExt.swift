@@ -2,8 +2,9 @@ import Foundation
 
 // 对话里的扩展动作：写入消息、识别文字（直接显示结果）、调用连接器
 extension Agent {
-    // 追加一条消息并写入对话记录（回调、连接器结果都走这里）
+    // 追加一条消息并写入对话记录（回调、连接器结果都走这里）。助理消息按当前语言翻译
     func post(_ role: String, _ text: String, files: [URL] = []) {
+        let text = role == "assistant" ? L10n.tr(text) : text
         msgs.append(Msg(role: role, text: text, files: files))
         guard UserDefaults.standard.object(forKey: "saveHistory") as? Bool ?? true else { return }
         let now = Date().timeIntervalSince1970
@@ -21,13 +22,13 @@ extension Agent {
         guard !busy else { return }
         busy = true
         attachments = []
-        post("user", "识别文字", files: files)
+        post("user", L10n.tr("识别文字"), files: files)
         let texts = await Task.detached { files.map { OCR.text($0) } }.value
         var parts: [String] = []
         for (i, t) in texts.enumerated() {
             let s = t.trimmingCharacters(in: .whitespacesAndNewlines)
             if s.isEmpty { continue }
-            parts.append(texts.count > 1 ? "第 \(i + 1) 张：\n\(s)" : s)
+            parts.append(texts.count > 1 ? L10n.f("第 {} 张：", "\(i + 1)") + "\n\(s)" : s)
         }
         post("assistant", parts.isEmpty ? "没有识别到文字。可以换一张更清晰的图，或直接告诉我要对这张图做什么。" : parts.joined(separator: "\n\n"))
         busy = false

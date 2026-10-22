@@ -16,6 +16,7 @@ struct TSTZBotApp: App {
     @AppStorage("appearance") private var appearance = 0
 
     init() {
+        L10n.bootstrap()
         UNUserNotificationCenter.current().delegate = NotifDelegate.shared
         // 主题只保留「跟随系统 / 浅色 / 深色」，升级后默认恢复为跟随系统
         let ud = UserDefaults.standard
@@ -84,7 +85,7 @@ struct LogoMark: View {
     var body: some View { BrandMark(size: size) }
 }
 
-// 文件卡片：图片显示缩略图（读不出来会明确提示），其他显示类型与大小
+// 文件显示：图片直接显示缩略图（不再套大框），其他文件显示一个小药丸。点击预览，长按可预览或分享。
 struct FileCard: View {
     let url: URL
     @Binding var preview: URL?
@@ -108,32 +109,39 @@ struct FileCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if isImage {
-                if let ui = Files.thumb(url, max: 900) {
-                    Image(uiImage: ui).resizable().scaledToFit().frame(maxHeight: 220)
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        .onTapGesture { preview = url }
-                } else {
-                    Label("这张图片无法读取", systemImage: "exclamationmark.triangle.fill")
-                        .font(.footnote).foregroundStyle(.red)
-                }
+        if isImage {
+            if let ui = Files.thumb(url, max: 900) {
+                Image(uiImage: ui)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxHeight: 260)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .onTapGesture { preview = url }
+                    .contextMenu { menu }
+            } else {
+                Label("这张图片无法读取", systemImage: "exclamationmark.triangle.fill")
+                    .font(.footnote).foregroundStyle(.red)
             }
-            HStack(spacing: 10) {
-                Image(systemName: kind.0).font(.title3).foregroundStyle(Brand.accent)
-                VStack(alignment: .leading, spacing: 2) {
+        } else {
+            HStack(spacing: 8) {
+                Image(systemName: kind.0).font(.system(size: 18)).foregroundStyle(Brand.ink)
+                VStack(alignment: .leading, spacing: 1) {
                     Text(kind.1).font(.subheadline.weight(.medium)).foregroundStyle(Brand.ink)
-                    Text(sizeText).font(.footnote).foregroundStyle(Brand.sub)
+                    Text(sizeText).font(.caption).foregroundStyle(Brand.sub)
                 }
-                Spacer(minLength: 12)
-                Button { preview = url } label: { Image(systemName: "eye") }
-                ShareLink(item: url) { Image(systemName: "square.and.arrow.up") }
             }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(Brand.userBubble)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .onTapGesture { preview = url }
+            .contextMenu { menu }
         }
-        .padding(12)
-        .background(Brand.card)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Brand.line, lineWidth: 1))
-        .frame(maxWidth: 300, alignment: .leading)
+    }
+
+    @ViewBuilder
+    private var menu: some View {
+        Button { preview = url } label: { Label("预览", systemImage: "eye") }
+        ShareLink(item: url) { Label("分享", systemImage: "square.and.arrow.up") }
     }
 }

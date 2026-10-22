@@ -2,7 +2,7 @@ import ActivityKit
 import Foundation
 
 // 灵动岛 / 锁屏实时活动：聆听、思考、搜索、执行、完成，以及闹钟与任务倒计时。
-// 所有操作排成一条队列依次执行，避免「结束」和「更新」互相抢先。
+// 所有操作排成一条队列依次执行，避免「结束」和「更新」互相抢先。显示的文字按应用当前语言翻译。
 enum Live {
     enum Phase: String {
         case listening, thinking, searching, working, done
@@ -42,8 +42,9 @@ enum Live {
     // 切换到某个状态（已有就更新，没有就新建）
     static func set(_ p: Phase, _ subtitle: String? = nil) {
         guard enabled else { return }
+        let sub = L10n.tr(subtitle ?? p.text)
         enqueue {
-            let st = BotActivityAttributes.ContentState(title: Brand.name, subtitle: subtitle ?? p.text, end: nil, phase: p.rawValue)
+            let st = BotActivityAttributes.ContentState(title: Brand.name, subtitle: sub, end: nil, phase: p.rawValue)
             let content = ActivityContent(state: st, staleDate: Date().addingTimeInterval(180))
             if let a = assistant() {
                 await a.update(content)
@@ -67,16 +68,17 @@ enum Live {
         }
     }
 
-    // 兼容旧调用：开始思考 / 思考结束（结束时先显示「任务已完成」两秒再收起）
+    // 开始思考 / 思考结束（结束时先显示「任务已完成」两秒再收起）
     static func thinking(_ on: Bool) {
         if on { set(.thinking) } else { finish() }
     }
 
     static func finish() {
         guard enabled else { return }
+        let sub = L10n.tr(Phase.done.text)
         enqueue {
             guard let a = assistant() else { return }
-            let st = BotActivityAttributes.ContentState(title: Brand.name, subtitle: Phase.done.text, end: nil, phase: Phase.done.rawValue)
+            let st = BotActivityAttributes.ContentState(title: Brand.name, subtitle: sub, end: nil, phase: Phase.done.rawValue)
             await a.update(ActivityContent(state: st, staleDate: Date().addingTimeInterval(30)))
         }
         Task {
@@ -91,11 +93,13 @@ enum Live {
 
     static func timer(title: String, subtitle: String, end: Date) {
         guard enabled else { return }
+        let t = L10n.tr(title)
+        let s = L10n.tr(subtitle)
         enqueue {
             for a in Activity<BotActivityAttributes>.activities where a.attributes.kind == "timer" {
                 await a.end(nil, dismissalPolicy: .immediate)
             }
-            let st = BotActivityAttributes.ContentState(title: title, subtitle: subtitle, end: end, phase: "timer")
+            let st = BotActivityAttributes.ContentState(title: t, subtitle: s, end: end, phase: "timer")
             let content = ActivityContent(state: st, staleDate: end.addingTimeInterval(120))
             _ = try? Activity.request(attributes: BotActivityAttributes(kind: "timer"), content: content, pushType: nil)
         }

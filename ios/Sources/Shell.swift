@@ -1,4 +1,5 @@
 import SwiftUI
+import Translation
 
 enum AppPage: String, Identifiable {
     case kb, tools, tasks, digest, evolve, settings
@@ -12,8 +13,10 @@ final class AppState: ObservableObject {
 }
 
 // 根界面：参照 Claude，没有底部标签栏。从左边缘右滑或点左上角菜单打开侧栏。
+// 语言切换时用 .id(版本号) 让整个界面重新绘制，系统翻译任务挂在这里（需要下载语言包时由系统弹窗）。
 struct RootView: View {
     @ObservedObject var state = AppState.shared
+    @ObservedObject var l10n = L10nState.shared
 
     var body: some View {
         GeometryReader { geo in
@@ -21,9 +24,11 @@ struct RootView: View {
             ZStack(alignment: .leading) {
                 DrawerView(width: w)
                     .frame(width: w)
+                    .id(l10n.version)
                 // 注意顺序：点击遮罩必须在 offset 之前加，才会跟着对话页一起右移；
                 // 否则它会盖在侧栏上，把侧栏里所有点击都当成「收起侧栏」。
                 ChatView()
+                    .id(l10n.version)
                     .frame(width: geo.size.width, height: geo.size.height)
                     .background(Brand.bg)
                     .clipShape(RoundedRectangle(cornerRadius: state.drawer ? 24 : 0, style: .continuous))
@@ -51,7 +56,11 @@ struct RootView: View {
                 }
             )
         }
-        .sheet(item: $state.page) { PageSheet(page: $0) }
+        .environment(\.locale, L10n.locale)
+        .environment(\.layoutDirection, L10n.rtl ? .rightToLeft : .leftToRight)
+        .translationTask(l10n.config) { session in await l10n.run(session) }
+        .onAppear { l10n.ensureTranslation() }
+        .sheet(item: $state.page) { PageSheet(page: $0).id(l10n.version) }
     }
 }
 
