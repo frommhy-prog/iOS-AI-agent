@@ -6,12 +6,18 @@ import FoundationModels
 
 // 今日回顾：iOS 不允许 App 读取「屏幕使用时间」和其他 App 的通知，所以这里只汇总本机允许读取的数据，
 // 再加上用户导入的屏幕使用时间 / 通知截图（端侧文字识别），由本机模型写成当天总结。
+// 所有显示的数据行和总结都用应用当前语言。
 @MainActor
 enum Digest {
     static func hm(_ d: Date) -> String {
         let f = DateFormatter()
         f.dateFormat = "HH:mm"
         return f.string(from: d)
+    }
+
+    // 括号里的列表（为空则不显示）
+    private static func paren(_ items: [String]) -> String {
+        items.isEmpty ? "" : L10n.f("（{}）", L10n.list(items))
     }
 
     // 读取今天本机能读到的数据；没有授权的项目直接略过
@@ -26,10 +32,10 @@ enum Digest {
             let evs = store.events(matching: store.predicateForEvents(withStart: start, end: end, calendars: nil))
                 .sorted { $0.startDate < $1.startDate }
             if evs.isEmpty {
-                out.append("日历：今天没有日程")
+                out.append(L10n.tr("日历") + L10n.colon + L10n.tr("今天没有日程"))
             } else {
-                let list = evs.prefix(10).map { (($0.isAllDay ? "全天" : hm($0.startDate)) + " " + ($0.title ?? "")) }
-                out.append("日历：共 \(evs.count) 项：" + list.joined(separator: "；"))
+                let list = evs.prefix(10).map { (($0.isAllDay ? L10n.tr("全天") : hm($0.startDate)) + " " + ($0.title ?? "")) }
+                out.append(L10n.f("日历：共 {} 项：{}", "\(evs.count)", L10n.list(list)))
             }
         }
 
@@ -46,11 +52,9 @@ enum Digest {
                 guard r.isCompleted, let d = r.completionDate else { return false }
                 return d >= start
             }
-            var s = "提醒事项：今天及逾期未完成 \(todo.count) 项"
-            if !todo.isEmpty { s += "（" + todo.prefix(8).map { $0.title ?? "" }.joined(separator: "、") + "）" }
-            s += "；今天已完成 \(done.count) 项"
-            if !done.isEmpty { s += "（" + done.prefix(8).map { $0.title ?? "" }.joined(separator: "、") + "）" }
-            out.append(s)
+            out.append(L10n.f("提醒事项：今天及逾期未完成 {} 项{}；今天已完成 {} 项{}",
+                              "\(todo.count)", paren(todo.prefix(8).map { $0.title ?? "" }),
+                              "\(done.count)", paren(done.prefix(8).map { $0.title ?? "" })))
         }
 
         let st = PHPhotoLibrary.authorizationStatus(for: .readWrite)
@@ -66,26 +70,26 @@ enum Digest {
                     if a.mediaType == .video { videos += 1 } else { photos += 1 }
                     if i >= 999 { stop.pointee = true }
                 }
-                var s = "相册：今天拍了 \(photos) 张照片"
-                if videos > 0 { s += "、\(videos) 段视频" }
-                if let f = r.firstObject?.creationDate, let l = r.lastObject?.creationDate { s += "，时间 \(hm(f)) 到 \(hm(l))" }
-                out.append(s)
+                let vid = videos > 0 ? L10n.f("、{} 段视频", "\(videos)") : ""
+                var span = ""
+                if let f = r.firstObject?.creationDate, let l = r.lastObject?.creationDate { span = L10n.f("，时间 {} 到 {}", hm(f), hm(l)) }
+                out.append(L10n.f("相册：今天拍了 {} 张照片{}{}", "\(photos)", vid, span))
             } else {
-                out.append("相册：今天没有新照片")
+                out.append(L10n.tr("相册：今天没有新照片"))
             }
         }
 
         let ts = start.timeIntervalSince1970
         let asked = DB.shared.rows("SELECT COUNT(*) AS n FROM msg WHERE role='user' AND ts>=?", [ts]).first?.i("n") ?? 0
-        out.append("助理：今天和助理对话 \(asked) 次")
+        out.append(L10n.f("助理：今天和助理对话 {} 次", "\(asked)"))
 
         let tasks = Tasks.list().filter { $0.d("due") >= ts && $0.d("due") < ts + 86400 }
         if !tasks.isEmpty {
-            out.append("定时任务：今天有 \(tasks.count) 个：" + tasks.prefix(6).map { $0.s("title") }.joined(separator: "、"))
+            out.append(L10n.f("定时任务：今天有 {} 个：{}", "\(tasks.count)", L10n.list(tasks.prefix(6).map { L10n.tr($0.s("title")) })))
         }
         let alarms = Tasks.alarms().filter { $0.d("due") >= ts && $0.d("due") < ts + 86400 }
         if !alarms.isEmpty {
-            out.append("闹钟：今天有 \(alarms.count) 个：" + alarms.prefix(6).map { Sys.plainLabel($0.s("label")) + " " + hm(Date(timeIntervalSince1970: $0.d("due"))) }.joined(separator: "、"))
+            out.append(L10n.f("闹钟：今天有 {} 个：{}", "\(alarms.count)", L10n.list(alarms.prefix(6).map { L10n.tr(Sys.plainLabel($0.s("label"))) + " " + hm(Date(timeIntervalSince1970: $0.d("due"))) })))
         }
         return out
     }
@@ -102,15 +106,15 @@ enum Digest {
     static func summarize(facts: [String], screens: [String], onUpdate: @escaping (String) -> Void) async -> String {
         switch SystemLanguageModel.default.availability {
         case .available: break
-        case .unavailable(let r): return Agent.unavailableText("\(r)")
+        case .unavailable(let r): return L10n.tr(Agent.unavailableText("\(r)"))
         @unknown default: break
         }
-        var prompt = "今天是 " + Sys.fmtFull(Date()) + "。以下是今天的资料：\n" + facts.joined(separator: "\n")
+        var prompt = "Today is " + Sys.fmtFull(Date()) + ". Data for today:\n" + facts.joined(separator: "\n")
         if !screens.isEmpty {
             let joined = screens.joined(separator: "\n---\n")
-            prompt += "\n\n以下是用户导入的屏幕使用时间或通知截图中识别出的文字（可能有错字）：\n" + String(joined.prefix(1500))
+            prompt += "\n\nText recognized from the user’s Screen Time / notification screenshots (may contain OCR errors):\n" + String(joined.prefix(1500))
         }
-        let ins = "你是用户的个人助理。根据给出的当天资料写一份中文每日回顾：先用一句话概括今天，再分三段列出「做了什么」「时间花在哪（有截图数据才写）」「明天要留意」，每段最多三条。只依据资料，资料里没有的内容不要编造。总共不超过 300 字。"
+        let ins = "You are the user’s personal assistant. Write a daily recap from the data given: first one sentence summarizing the day, then three short sections — what was done, where the time went (only if screenshot data exists), and what to watch tomorrow — at most three items each. Use only the data provided and never invent anything. Keep it under 300 characters/words. " + L10n.replyDirective
         let session = LanguageModelSession(instructions: ins)
         var last = ""
         do {
@@ -119,9 +123,9 @@ enum Digest {
                 onUpdate(last)
             }
         } catch {
-            return last.isEmpty ? "这次没能生成（\(String("\(error)".prefix(80)))），请再试一次。" : last
+            return last.isEmpty ? L10n.f("这次没能生成（{}），请再试一次。", String("\(error)".prefix(80))) : last
         }
-        return last.isEmpty ? "模型没有返回内容，请再试一次。" : last
+        return last.isEmpty ? L10n.tr("模型没有返回内容，请再试一次。") : last
     }
 }
 
@@ -224,7 +228,7 @@ struct DigestView: View {
     func save() {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd"
-        _ = KB.shared.upsert("回顾 " + f.string(from: Date()), result)
+        _ = KB.shared.upsert(L10n.tr("今日回顾") + " " + f.string(from: Date()), result)
         saved = true
     }
 }

@@ -1,7 +1,7 @@
 import SwiftUI
 import FoundationModels
 
-// 设置：主题只保留「跟随系统 / 浅色 / 深色」，默认跟随系统
+// 设置：主题只保留「跟随系统 / 浅色 / 深色」，默认跟随系统；语言默认跟随系统，可切换到主流语言
 struct AppSettingsView: View {
     @AppStorage("appearance") private var appearance = 0
     @AppStorage("saveHistory") private var saveHistory = true
@@ -32,6 +32,17 @@ struct AppSettingsView: View {
                         Text("深色").tag(2)
                     }
                     .pickerStyle(.segmented)
+                }
+                Section("语言") {
+                    NavigationLink {
+                        LanguagePage()
+                    } label: {
+                        HStack {
+                            Text("应用语言")
+                            Spacer()
+                            Text(L10n.currentName).foregroundStyle(Brand.sub)
+                        }
+                    }
                 }
                 Section("对话") {
                     Toggle("保存对话记录", isOn: $saveHistory).toggleStyle(SwitchToggleStyle(tint: .green))
@@ -66,7 +77,7 @@ struct AppSettingsView: View {
                         LogoMark(size: 48)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(Brand.name).font(.headline)
-                            Text(Brand.tagline + " · 版本 0.7").font(.subheadline).foregroundStyle(.secondary)
+                            Text(L10n.tr(Brand.tagline) + " · " + L10n.tr("版本") + " 0.8").font(.subheadline).foregroundStyle(.secondary)
                         }
                     }
                     .padding(.vertical, 4)
@@ -103,14 +114,14 @@ struct AppSettingsView: View {
     }
 
     func exportAll() -> URL? {
-        var s = "# " + Brand.name + " 对话记录\n\n"
+        var s = "# " + Brand.name + " " + L10n.tr("对话记录") + "\n\n"
         for c in DB.shared.rows("SELECT id,title,ts FROM conv ORDER BY ts") {
-            s += "## " + c.s("title") + "（" + Sys.fmt(Date(timeIntervalSince1970: c.d("ts"))) + "）\n\n"
+            s += "## " + L10n.tr(c.s("title")) + "（" + Sys.fmt(Date(timeIntervalSince1970: c.d("ts"))) + "）\n\n"
             for m in DB.shared.rows("SELECT role,text FROM msg WHERE conv=? ORDER BY id", [c.i("id")]) {
-                s += (m.s("role") == "user" ? "**我**：" : "**" + Brand.name + "**：") + m.s("text") + "\n\n"
+                s += "**" + (m.s("role") == "user" ? L10n.tr("我") : Brand.name) + "**" + L10n.colon + m.s("text") + "\n\n"
             }
         }
-        let u = Store.dir("Outputs").appendingPathComponent(Brand.name + " 对话记录.md")
+        let u = Store.dir("Outputs").appendingPathComponent(Brand.name + " " + L10n.tr("对话记录") + ".md")
         try? s.write(to: u, atomically: true, encoding: .utf8)
         return u
     }

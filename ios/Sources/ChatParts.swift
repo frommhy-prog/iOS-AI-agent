@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 import AVFoundation
 
-// 朗读回答
+// 朗读回答（朗读语言跟随应用当前语言）
 @MainActor
 final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
     static let shared = Speaker()
@@ -25,7 +25,7 @@ final class Speaker: NSObject, ObservableObject, AVSpeechSynthesizerDelegate {
         try? AVAudioSession.sharedInstance().setActive(true)
         let plain = text.replacingOccurrences(of: "[*#`>_]", with: "", options: .regularExpression)
         let u = AVSpeechUtterance(string: plain)
-        u.voice = AVSpeechSynthesisVoice(language: "zh-CN")
+        u.voice = AVSpeechSynthesisVoice(language: L10n.info.locale)
         speakingId = id
         synth.speak(u)
     }
@@ -141,7 +141,7 @@ struct ShareView: View {
 
     private var linkTitle: String {
         if let t = agent.msgs.first(where: { $0.role == "user" })?.text, !t.isEmpty { return String(t.prefix(20)) }
-        return Brand.name + " Chat"
+        return Brand.name + " · " + L10n.tr("对话")
     }
 
     var body: some View {
@@ -154,7 +154,7 @@ struct ShareView: View {
                     }
                     .pickerStyle(.segmented)
 
-                    // 一键发送对话链接：生成网页链接后直接弹出系统分享面板
+                    // 一键发送对话链接：生成网页链接后直接弹出系统分享面板。样式由 PrimaryButtonStyle 保证深浅色下都清晰
                     Button { sendLink() } label: {
                         HStack(spacing: 8) {
                             if linking { ProgressView() } else { Image(systemName: "link") }
@@ -190,7 +190,7 @@ struct ShareView: View {
                             .shadow(color: .black.opacity(0.15), radius: 10, y: 4)
                     }
                     if let url, let image {
-                        ShareLink(item: url, preview: SharePreview(Brand.name + " Chat", image: Image(uiImage: image))) {
+                        ShareLink(item: url, preview: SharePreview(linkTitle, image: Image(uiImage: image))) {
                             Label("分享图片到微信、QQ、微博等", systemImage: "photo").frame(maxWidth: .infinity)
                         }
                         .buttonStyle(.bordered)
@@ -252,7 +252,8 @@ struct ShareView: View {
     }
 }
 
-// 分享图片：按 OSVIA 设计包的「对话分享图片」排版——深灰黑底、荷绿点缀、用户气泡靠右、助理回答在带边框的卡片里，底部开发者微信
+// 分享图片：按 OSVIA 设计包排版——深灰黑底、荷绿点缀、用户气泡靠右、助理回答在带边框的卡片里。
+// 所有文字（标签、标语、页脚）都跟随应用当前语言。
 struct ShareCard: View {
     let msgs: [Msg]
 
@@ -261,12 +262,12 @@ struct ShareCard: View {
             HStack {
                 HStack(spacing: 10) {
                     BrandGlyph(size: 30)
-                    Text(Brand.name).font(.system(size: 19, weight: .bold)).foregroundStyle(BrandPalette.ink)
+                    Text(verbatim: Brand.name).font(.system(size: 19, weight: .bold)).foregroundStyle(BrandPalette.ink)
                 }
                 Spacer()
-                Text("SHARED CHAT").font(.system(size: 11)).tracking(1).foregroundStyle(BrandPalette.sub)
+                Text(verbatim: L10n.tr("对话分享")).font(.system(size: 11)).tracking(1).foregroundStyle(BrandPalette.sub)
             }
-            Text("A clearer way to\nget things done.")
+            Text(verbatim: L10n.tr("把事情做得更清晰。"))
                 .font(.system(size: 27, weight: .bold))
                 .foregroundStyle(BrandPalette.ink)
                 .lineSpacing(2)
@@ -279,8 +280,8 @@ struct ShareCard: View {
                         HStack {
                             Spacer(minLength: 56)
                             VStack(alignment: .leading, spacing: 4) {
-                                Text("USER").font(.system(size: 10)).tracking(0.5).foregroundStyle(BrandPalette.mint)
-                                Text(m.text.isEmpty ? "[文件]" : String(m.text.prefix(300)))
+                                Text(verbatim: L10n.tr("用户")).font(.system(size: 10)).tracking(0.5).foregroundStyle(BrandPalette.mint)
+                                Text(verbatim: m.text.isEmpty ? "[" + L10n.tr("文件") + "]" : String(m.text.prefix(300)))
                                     .font(.system(size: 15))
                                     .foregroundStyle(BrandPalette.ink)
                             }
@@ -291,8 +292,8 @@ struct ShareCard: View {
                         }
                     } else {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text(Brand.name).font(.system(size: 14, weight: .bold)).foregroundStyle(BrandPalette.mint)
-                            Text(m.text.isEmpty ? "[文件]" : String(m.text.prefix(500)))
+                            Text(verbatim: Brand.name).font(.system(size: 14, weight: .bold)).foregroundStyle(BrandPalette.mint)
+                            Text(verbatim: m.text.isEmpty ? "[" + L10n.tr("文件") + "]" : String(m.text.prefix(500)))
                                 .font(.system(size: 15))
                                 .foregroundStyle(BrandPalette.ink)
                                 .lineSpacing(5)
@@ -307,9 +308,9 @@ struct ShareCard: View {
             }
 
             Rectangle().fill(BrandPalette.line).frame(height: 1).padding(.top, 26).padding(.bottom, 16)
-            Text("Made with \(Brand.name)").font(.system(size: 13)).foregroundStyle(BrandPalette.sub)
-            Text("Developer WeChat: TSTZ-M").font(.system(size: 16, weight: .bold)).foregroundStyle(BrandPalette.mint).padding(.top, 6)
-            Text("SEARCH  ·  THINK  ·  ACT").font(.system(size: 10)).tracking(1).foregroundStyle(BrandPalette.sub).padding(.top, 26)
+            Text(verbatim: L10n.f("由「{}」生成", Brand.name)).font(.system(size: 13)).foregroundStyle(BrandPalette.sub)
+            Text(verbatim: L10n.tr("开发者微信：TSTZ-M")).font(.system(size: 16, weight: .bold)).foregroundStyle(BrandPalette.mint).padding(.top, 6)
+            Text(verbatim: L10n.tr("搜索 · 思考 · 行动")).font(.system(size: 10)).tracking(1).foregroundStyle(BrandPalette.sub).padding(.top, 26)
         }
         .padding(24)
         .frame(width: 360, alignment: .leading)
