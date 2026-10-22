@@ -15,21 +15,24 @@ enum Sys {
         return cal.date(bySettingHour: min(max(h, 0), 23), minute: min(max(m, 0), 59), second: 0, of: day)
     }
 
+    // 日期格式跟随应用当前语言（简繁中文保持原来的写法，其他语言用系统的本地化模板）
+    private static var chineseDates: Bool { L10n.code == "zh-Hans" || L10n.code == "zh-Hant" }
+
     static func fmt(_ d: Date) -> String {
         let f = DateFormatter()
-        f.locale = Locale(identifier: "zh_CN")
-        f.dateFormat = "M月d日 EEEE HH:mm"
+        f.locale = L10n.locale
+        if chineseDates { f.dateFormat = "M月d日 EEEE HH:mm" } else { f.setLocalizedDateFormatFromTemplate("MMMd EEEE jm") }
         return f.string(from: d)
     }
 
     static func fmtFull(_ d: Date) -> String {
         let f = DateFormatter()
-        f.locale = Locale(identifier: "zh_CN")
-        f.dateFormat = "yyyy年M月d日 EEEE HH:mm"
+        f.locale = L10n.locale
+        if chineseDates { f.dateFormat = "yyyy年M月d日 EEEE HH:mm" } else { f.setLocalizedDateFormatFromTemplate("yMMMd EEEE jm") }
         return f.string(from: d)
     }
 
-    // 今天 / 明天 / 后天 / M月d日 周X + 时间
+    // 今天 / 明天 / 后天 / 日期 + 时间
     static func friendly(_ d: Date) -> String {
         let cal = Calendar.current
         let days = cal.dateComponents([.day], from: cal.startOfDay(for: Date()), to: cal.startOfDay(for: d)).day ?? 99
@@ -37,28 +40,28 @@ enum Sys {
         t.dateFormat = "HH:mm"
         let time = t.string(from: d)
         switch days {
-        case 0: return "今天 \(time)"
-        case 1: return "明天 \(time)"
-        case 2: return "后天 \(time)"
+        case 0: return L10n.tr("今天") + " \(time)"
+        case 1: return L10n.tr("明天") + " \(time)"
+        case 2: return L10n.tr("后天") + " \(time)"
         default:
             let f = DateFormatter()
-            f.locale = Locale(identifier: "zh_CN")
-            f.dateFormat = "M月d日 EEE"
+            f.locale = L10n.locale
+            if chineseDates { f.dateFormat = "M月d日 EEE" } else { f.setLocalizedDateFormatFromTemplate("MMMd EEE") }
             return "\(f.string(from: d)) \(time)"
         }
     }
 
-    static func repText(_ rep: Int) -> String { rep == 1 ? "每天" : rep == 7 ? "每周" : "" }
+    static func repText(_ rep: Int) -> String { rep == 1 ? L10n.tr("每天") : rep == 7 ? L10n.tr("每周") : "" }
 
     static func ensureNotif() async {
         _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
     }
 
-    // rep：0 一次，1 每天，7 每周
+    // rep：0 一次，1 每天，7 每周。通知的标题和正文按应用当前语言翻译（用户自己写的内容原样保留）
     static func notify(id: String, title: String, body: String, at d: Date, rep: Int = 0, sound: Bool = true) {
         let c = UNMutableNotificationContent()
-        c.title = title
-        c.body = body
+        c.title = L10n.tr(title)
+        c.body = L10n.tr(body)
         if sound { c.sound = .default }
         let cal = Calendar.current
         let comps: DateComponents
@@ -83,13 +86,14 @@ enum Sys {
     static func alarmAuth() -> String {
         switch AlarmManager.shared.authorizationState {
         case .authorized: return "已允许"
-        case .denied: return "已拒绝（请到 设置 → TSTZ Bot 开启闹钟）"
+        case .denied: return "已拒绝（请到 设置 → \(Brand.name) 开启闹钟）"
         default: return "还没询问"
         }
     }
 
     // 闹钟分两层：① 内置闹钟（AlarmKit，真正响铃，静音与专注模式下也响，但不在「时钟」列表里）
     // ② 系统「时钟」写入（经快捷指令「创建闹钟」，需连接一次）。② 成功后自动取消 ① 的备份，避免重复响。
+    // 返回的是中文确定性回复，显示前由 Agent 按当前语言逐句翻译。
     static func alarm(_ d: Date, _ label: String, rep: Int = 0, builtinOnly: Bool = false) async -> String {
         guard rep > 0 || d > Date() else { return "这个时间已经过了，换一个时间试试。" }
         await ensureNotif()
@@ -103,8 +107,8 @@ enum Sys {
             if mgr.authorizationState == .notDetermined { _ = try await mgr.requestAuthorization() }
             if mgr.authorizationState == .authorized {
                 let alert = AlarmPresentation.Alert(
-                    title: LocalizedStringResource(stringLiteral: title),
-                    stopButton: AlarmButton(text: "停止", textColor: .white, systemImageName: "stop.fill")
+                    title: LocalizedStringResource(stringLiteral: L10n.tr(title)),
+                    stopButton: AlarmButton(text: LocalizedStringResource(stringLiteral: L10n.tr("停止")), textColor: .white, systemImageName: "stop.fill")
                 )
                 let attrs = AlarmAttributes<NoMeta>(presentation: AlarmPresentation(alert: alert), tintColor: .green)
                 let schedule: Alarm.Schedule
@@ -123,7 +127,7 @@ enum Sys {
                 kitOK = ((try? mgr.alarms) ?? []).contains { $0.id == id }
                 if !kitOK { kitErr = "系统没有登记这个闹钟" }
             } else {
-                kitErr = "没有闹钟权限，请到 设置 → TSTZ Bot 里允许闹钟"
+                kitErr = "没有闹钟权限，请到 设置 → \(Brand.name) 里允许闹钟"
             }
         } catch {
             kitErr = error.localizedDescription
@@ -192,7 +196,7 @@ enum Sys {
     static func event(_ title: String, _ d: Date, minutes: Int = 60) async -> String {
         guard d > Date() else { return "这个时间已经过了，换一个时间试试。" }
         do {
-            guard try await store.requestFullAccessToEvents() else { return "没有日历权限，请到 设置 → TSTZ Bot 里允许日历。" }
+            guard try await store.requestFullAccessToEvents() else { return "没有日历权限，请到 设置 → \(Brand.name) 里允许日历。" }
             let e = EKEvent(eventStore: store)
             e.title = title
             e.startDate = d

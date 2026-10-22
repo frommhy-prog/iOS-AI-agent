@@ -22,10 +22,11 @@ enum Tasks {
 
     static func alarms() -> [Row] { DB.shared.rows("SELECT * FROM alarm ORDER BY due") }
 
+    // 任务内容用当前应用语言生成（通知里显示的就是这段文字）
     static func gen(_ instr: String) async -> String {
         let s = LanguageModelSession(
             tools: [Recall(), FetchURL()],
-            instructions: "你是个人助理。直接输出任务结果，简洁，不超过120字，使用简体中文，不要出现代码。需要资料时先调用工具。当前时间：" + Sys.fmtFull(Date())
+            instructions: "你是个人助理。直接输出任务结果，简洁，不超过120字，不要出现代码。需要资料时先调用工具。" + L10n.replyDirective + "当前时间：" + Sys.fmtFull(Date())
         )
         return (try? await s.respond(to: instr).content) ?? ""
     }
