@@ -149,12 +149,15 @@ final class Agent: ObservableObject {
         return msgs.last?.text ?? ""
     }
 
-    // 生成一条助理回复：先放一个空消息，模型边生成边往里填（流式）
+    // 生成一条助理回复：先放一个空消息，模型边生成边往里填（流式）。
+    // 确定性回复（路由、转换、脚本、图片摘要）用中文写死，最后按当前语言翻译；模型回答直接用指定语言生成。
     private func respond(_ t: String, files: [URL]) async {
         let ph = Msg(role: "assistant", text: "", files: [], streaming: true)
         msgs.append(ph)
         let mid = ph.id
         var reply = ""
+        var fixed = true
+        let allImages = !files.isEmpty && files.allSatisfy { Convert.imgExt.contains($0.pathExtension.lowercased()) }
         if !files.isEmpty { Live.set(.working, "正在处理文件") }
         if let f = files.last, let r = await Router.convert(t, file: f) {
             reply = r.0
@@ -162,14 +165,18 @@ final class Agent: ObservableObject {
             reply = r
         } else if files.isEmpty, let r = await scriptIntent(t, mid: mid) {
             reply = r
-        } else if t.isEmpty, !files.isEmpty, files.allSatisfy({ Convert.imgExt.contains($0.pathExtension.lowercased()) }) {
+        } else if t.isEmpty, allImages {
             reply = await Self.imageSummary(files)
+        } else if allImages, Self.wantsAnalysis(t) {
+            fixed = false
+            reply = await analyzeImages(t, files: files, mid: mid)
         } else {
+            fixed = false
             var ctx = ""
             for f in files { ctx += await Self.describe(f) }
             reply = await ask(t.isEmpty ? "请处理我发送的文件" : t, ctx: ctx, hasFile: !files.isEmpty, mid: mid)
         }
-        finish(mid, reply)
+        finish(mid, reply, translate: fixed)
     }
 
     private func update(_ mid: UUID, _ text: String) {
@@ -178,9 +185,9 @@ final class Agent: ObservableObject {
 
     private func partial(_ mid: UUID) -> String { msgs.first(where: { $0.id == mid })?.text ?? "" }
 
-    private func finish(_ mid: UUID, _ text: String) {
+    private func finish(_ mid: UUID, _ text: String, translate: Bool = false) {
         let files = Out.take()
-        let body = text.isEmpty ? "已停止。" : text
+        let body = text.isEmpty ? L10n.tr("已停止。") : (translate ? L10n.tr(text) : text)
         if let i = msgs.firstIndex(where: { $0.id == mid }) {
             msgs[i].text = body
             msgs[i].files = files
@@ -198,7 +205,7 @@ final class Agent: ObservableObject {
         if banned.contains(where: { t.contains($0) }) {
             return "做不到：iOS 不允许一个 App 自动点击或操作别的 App（点赞、关注、刷视频都不行），快捷指令也一样。\n脚本技能只能处理文字、读网页、查知识库，比如整理文案、提取网页要点、批量改写。想做其中一种，直接告诉我。"
         }
-        update(mid, "正在编写脚本…")
+        update(mid, L10n.tr("正在编写脚本…"))
         Live.set(.working, "正在编写脚本")
         let r = await Skills.create(t) { p in
             Task { @MainActor in self.update(mid, p) }
@@ -210,6 +217,31 @@ final class Agent: ObservableObject {
     }
 
     // MARK: 图片与文件理解
+    // 用户是否在让助理「看、分析、说明」图片（而不是转换格式）
+    nonisolated static func wantsAnalysis(_ t: String) -> Bool {
+        let low = t.lowercased()
+        let ks = ["分析", "看看", "看一下", "看下", "描述", "这是什么", "是什么", "什么意思", "说明", "解释", "总结", "讲讲", "说说", "内容", "analy", "describe", "explain", "what", "summar", "look", "tell me"]
+        return ks.contains { low.contains($0) }
+    }
+
+    // 图片分析：本机先识别文字与类别，再让模型只依据识别结果回答（不给工具，避免乱调用）
+    private func analyzeImages(_ t: String, files: [URL], mid: UUID) async -> String {
+        var ctx = ""
+        for (i, f) in files.prefix(3).enumerated() {
+            let text = await Task.detached { OCR.text(f) }.value
+            let labels = await Task.detached { OCR.labels(f) }.value
+            let clean = String(text.replacingOccurrences(of: "\n", with: " ").prefix(700))
+            ctx += "【图片\(i + 1)】类别：" + (labels.isEmpty ? "未知" : labels.joined(separator: "、")) + "；文字：" + (clean.isEmpty ? "无" : clean) + "\n"
+        }
+        return await ask(t, ctx: ctx, hasFile: true, mid: mid, imageMode: true)
+    }
+
+    nonisolated static func imagePrompt(_ q: String, _ ctx: String) -> String {
+        "以下是本机对用户发来的图片做识别得到的结果（文字可能有错别字，不要编造识别结果以外的内容）：\n" + ctx
+            + "\n用户的问题：" + (q.isEmpty ? "说明这张图片的内容" : q)
+            + "\n请只依据上面的识别结果回答这个问题，两三句话说清楚；如果文字很少或没有，就说明只能看出类别，并建议用户补充说明。"
+    }
+
     nonisolated static func imageSummary(_ files: [URL]) async -> String {
         var parts = ["收到 \(files.count) 张图片。我能识别图中的文字和大致类别，看不到画面细节。"]
         for f in files.prefix(3) {
@@ -218,7 +250,7 @@ final class Agent: ObservableObject {
             if !labels.isEmpty { parts.append("类别：" + labels.joined(separator: "、")) }
             parts.append(text.isEmpty ? "图中没有识别到文字。" : "图中文字：" + String(text.prefix(300)))
         }
-        parts.append("可以点输入框上方的「识别文字」「转成PDF」「转成PNG」，或直接告诉我要做什么。")
+        parts.append("可以点输入框上方的「识别文字」「转成PDF」「转成PNG」，或直接告诉我要对这张图做什么。")
         return parts.joined(separator: "\n")
     }
 
@@ -238,27 +270,40 @@ final class Agent: ObservableObject {
     }
 
     // MARK: 模型
-    nonisolated static func instructions() -> String {
+    // time：只在问题和时间有关时才告诉模型当前日期，否则它会把日期当成要回答的内容
+    nonisolated static func instructions(time: Bool) -> String {
         let concise = (UserDefaults.standard.object(forKey: "style") as? Int ?? 0) == 0
-        return Evolve.prompt()
-            + "\n现在是" + Sys.fmtFull(Date()) + "，时区" + TimeZone.current.identifier + "。"
-            + "你是 " + Brand.name + "，运行在用户 iPhone 上的中文助理。直接针对用户的问题作答，不要复述问题，信息够用时不要反问。"
+        var base = Evolve.prompt()
+        if !L10n.isChinese {
+            base = base.replacingOccurrences(of: "使用简体中文，", with: "").replacingOccurrences(of: "使用简体中文", with: "")
+        }
+        return L10n.replyDirective + "\n" + base
+            + (time ? "\n现在是" + Sys.fmtFull(Date()) + "，时区" + TimeZone.current.identifier + "。" : "\n")
+            + "你是 " + Brand.name + "，运行在用户 iPhone 上的助理。只回答用户当前这一个问题，不要复述问题，不要扔到别的话题，信息够用时不要反问。"
             + "你看不到图片，只能依据识别出的类别和文字回答，不要说无法读取图片。"
             + (concise ? "回答要简短。" : "回答可以详细一些。")
             + "需要列表或代码时用 Markdown。不知道就直说不知道，不要编造。"
     }
 
-    // 只在消息确实相关时才给模型工具：工具越多，小模型越容易答非所问
+    nonisolated static func needsTime(_ t: String, _ tools: [any Tool]) -> Bool {
+        if tools.contains(where: { $0 is SetAlarm || $0 is AddReminder || $0 is AddEvent }) { return true }
+        let low = t.lowercased()
+        let ks = ["今天", "明天", "后天", "现在", "几点", "日期", "星期", "周几", "时间", "分钟", "小时", "天后", "today", "tomorrow", "tonight", "date", "time", "week", "hour", "minute"]
+        return ks.contains { low.contains($0) }
+    }
+
+    // 只在消息确实相关时才给模型工具：工具越多，小模型越容易答非所问。「有附件」不再自动给转换工具，必须说到转换才给
     nonisolated static func tools(for t: String, hasFile: Bool) -> [any Tool] {
-        func has(_ k: [String]) -> Bool { k.contains { t.contains($0) } }
+        let low = t.lowercased()
+        func has(_ k: [String]) -> Bool { k.contains { low.contains($0) } }
         var r: [any Tool] = []
-        if has(["记住", "记一下", "别忘了"]) { r.append(Remember()) }
-        if has(["之前", "上次", "知识库", "笔记", "资料", "我的文档", "我存的"]) { r.append(Recall()) }
-        if has(["闹钟", "提醒", "日历", "日程", "会议", "定时", "叫我", "起床"]) { r += [SetAlarm(), AddReminder(), AddEvent()] }
-        if hasFile || has(["转换", "转成", "转为", "压缩", "导出", "提取"]) { r.append(ConvertFile()) }
+        if has(["记住", "记一下", "别忘了", "remember"]) { r.append(Remember()) }
+        if has(["之前", "上次", "知识库", "笔记", "资料", "我的文档", "我存的", "earlier", "notes", "knowledge"]) { r.append(Recall()) }
+        if has(["闹钟", "提醒", "日历", "日程", "会议", "定时", "叫我", "起床", "alarm", "remind", "calendar", "schedule", "wake me", "meeting"]) { r += [SetAlarm(), AddReminder(), AddEvent()] }
+        if has(["转换", "转成", "转为", "压缩", "导出", "提取", "convert", "compress", "export", "extract", "pdf", "png", "jpg", "mp4"]) { r.append(ConvertFile()) }
         if DB.shared.rows("SELECT name FROM skill").contains(where: { t.contains($0.s("name")) }) { r.append(RunSkill()) }
-        if has(["查找文件", "读取文件", "找文件", "文档里"]) { r += [FindFile(), ReadFile()] }
-        if has(["http", "网页", "网址", "链接", "新闻"]) { r.append(FetchURL()) }
+        if has(["查找文件", "读取文件", "找文件", "文档里", "find file", "read file"]) { r += [FindFile(), ReadFile()] }
+        if has(["http", "网页", "网址", "链接", "新闻", "web", "news", "link", "url"]) { r.append(FetchURL()) }
         if Connectors.all().contains(where: { t.contains($0.s("name")) }) { r.append(CallConnector()) }
         return r
     }
@@ -279,35 +324,40 @@ final class Agent: ObservableObject {
         return nil
     }
 
-    private func ask(_ t: String, ctx: String, hasFile: Bool, mid: UUID) async -> String {
+    private func ask(_ t: String, ctx: String, hasFile: Bool, mid: UUID, imageMode: Bool = false) async -> String {
         switch SystemLanguageModel.default.availability {
         case .available:
             break
         case .unavailable(let reason):
-            return Self.unavailableText("\(reason)")
+            return L10n.tr(Self.unavailableText("\(reason)"))
         @unknown default:
             break
         }
-        let tools = Self.tools(for: t, hasFile: hasFile)
+        let tools: [any Tool] = imageMode ? [] : Self.tools(for: t, hasFile: hasFile)
         // 灵动岛：需要联网读网页时显示「搜索」，否则显示「思考」
         Live.set(tools.contains { $0 is FetchURL } ? .searching : .thinking)
-        let hist = msgs.dropLast(2).suffix(6).filter { !$0.text.isEmpty }
+        let hist = imageMode ? "" : msgs.dropLast(2).suffix(4).filter { !$0.text.isEmpty }
             .map { ($0.role == "user" ? "用户：" : "助理：") + String($0.text.prefix(200)) }
             .joined(separator: "\n")
         let names = Connectors.all().map { $0.s("name") }.joined(separator: "、")
         let extra = names.isEmpty ? "" : "\n可调用的连接器：" + names
+        let ins = Self.instructions(time: Self.needsTime(t, tools)) + extra
         var lastErr = ""
         for attempt in 0..<3 {
-            let session = LanguageModelSession(tools: attempt == 2 ? [] : tools, instructions: Self.instructions() + extra)
+            let session = LanguageModelSession(tools: attempt == 2 ? [] : tools, instructions: ins)
             let prompt: String
-            switch attempt {
-            case 0: prompt = (hist.isEmpty ? "" : "近期对话：\n\(hist)\n\n") + "用户：\(t)\(ctx)"
-            case 1: prompt = "用户：\(t)" + String(ctx.prefix(300))
-            default: prompt = t
+            if imageMode {
+                prompt = attempt < 2 ? Self.imagePrompt(t, ctx) : t
+            } else {
+                switch attempt {
+                case 0: prompt = (hist.isEmpty ? "" : "此前的对话（仅供参考）：\n\(hist)\n\n") + "用户当前的问题（只回答这个问题）：\(t)\(ctx)"
+                case 1: prompt = "用户当前的问题：\(t)" + String(ctx.prefix(300))
+                default: prompt = t
+                }
             }
             do {
                 var last = ""
-                for try await snap in session.streamResponse(to: prompt) {
+                for try await snap in session.streamResponse(to: prompt, options: GenerationOptions(temperature: 0.3)) {
                     last = snap.content
                     update(mid, last)
                 }
@@ -316,15 +366,15 @@ final class Agent: ObservableObject {
             } catch {
                 if Task.isCancelled || error is CancellationError { return partial(mid) }
                 lastErr = "\(error)"
-                if let m = Self.explain(lastErr) { return m }
+                if let m = Self.explain(lastErr) { return L10n.tr(m) }
             }
             if Task.isCancelled { return partial(mid) }
             update(mid, "")
         }
-        return "这次没能完成（\(String(lastErr.prefix(90)))）。可以点「重新生成」，或换个说法。"
+        return L10n.tr("这次没能完成（\(String(lastErr.prefix(90)))）。可以点「重新生成」，或换个说法。")
     }
 
     func transcript(_ ms: [Msg]) -> String {
-        ms.map { ($0.role == "user" ? "我：" : Brand.name + "：") + $0.text }.joined(separator: "\n\n")
+        ms.map { ($0.role == "user" ? L10n.tr("我") : Brand.name) + L10n.colon + $0.text }.joined(separator: "\n\n")
     }
 }

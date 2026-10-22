@@ -4,7 +4,8 @@ import Speech
 import AVFoundation
 import Vision
 
-// 语音输入：边说边出文字，结束后自动填入输入框；聆听时灵动岛显示「聆听中」
+// 语音输入：边说边出文字，结束后自动填入输入框；聆听时灵动岛显示「聆听中」。
+// 语音识别语言跟随应用当前语言。
 final class Voice: ObservableObject {
     @Published var listening = false
     @Published var live = ""
@@ -13,7 +14,7 @@ final class Voice: ObservableObject {
     var onText: ((String) -> Void)?
     var onFinished: ((String) -> Void)?
 
-    private let rec = SFSpeechRecognizer(locale: Locale(identifier: "zh-CN"))
+    private var recognizer: SFSpeechRecognizer?
     private let engine = AVAudioEngine()
     private var req: SFSpeechAudioBufferRecognitionRequest?
     private var task: SFSpeechRecognitionTask?
@@ -25,6 +26,8 @@ final class Voice: ObservableObject {
 
     func start() {
         error = ""
+        let rec = SFSpeechRecognizer(locale: L10n.locale)
+        recognizer = rec
         guard let rec, rec.isAvailable else {
             error = "语音识别暂时不可用，请检查网络，或在 设置 → 通用 → 键盘 里开启听写"
             return
@@ -71,7 +74,7 @@ final class Voice: ObservableObject {
             Live.listening(true)
             limit?.invalidate()
             limit = Timer.scheduledTimer(withTimeInterval: 60, repeats: false) { [weak self] _ in self?.stop() }
-            task = rec?.recognitionTask(with: r) { [weak self] res, err in
+            task = recognizer?.recognitionTask(with: r) { [weak self] res, err in
                 DispatchQueue.main.async {
                     guard let self, !self.done else { return }
                     if let res {
@@ -90,7 +93,7 @@ final class Voice: ObservableObject {
         } catch {
             listening = false
             Live.listening(false)
-            self.error = "无法启动麦克风：\(error.localizedDescription)"
+            self.error = L10n.f("无法启动麦克风：{}", error.localizedDescription)
         }
     }
 
