@@ -1,9 +1,3 @@
 Xcode 26.6
 Build version 17F113
-/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/LocalLLM.swift:4:8: error: unable to resolve module dependency: 'MLXLLM'
-/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/LocalLLM.swift:4:8: error: Unable to resolve module dependency: 'MLXLLM'
-/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/LocalLLM.swift:5:8: error: unable to resolve module dependency: 'MLXLMCommon'
-/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/LocalLLM.swift:5:8: error: Unable to resolve module dependency: 'MLXLMCommon'
-/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/LocalLLM.swift:6:8: error: unable to resolve module dependency: 'Tokenizers'
-/Users/runner/work/iOS-AI-agent/iOS-AI-agent/ios/Sources/LocalLLM.swift:6:8: error: Unable to resolve module dependency: 'Tokenizers'
-RESULT: FAILED
+RESULT: SUCCEEDED
