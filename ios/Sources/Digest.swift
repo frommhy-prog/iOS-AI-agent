@@ -6,7 +6,7 @@ import FoundationModels
 
 // 今日回顾：iOS 不允许 App 读取「屏幕使用时间」和其他 App 的通知，所以这里只汇总本机允许读取的数据，
 // 再加上用户导入的屏幕使用时间 / 通知截图（端侧文字识别），由本机模型写成当天总结。
-// 所有显示的数据行和总结都用应用当前语言。
+// 所有显示的数据行和总结都用应用当前语言；本地大模型可用时优先用它。
 @MainActor
 enum Digest {
     static func hm(_ d: Date) -> String {
@@ -104,17 +104,28 @@ enum Digest {
     }
 
     static func summarize(facts: [String], screens: [String], onUpdate: @escaping (String) -> Void) async -> String {
-        switch SystemLanguageModel.default.availability {
-        case .available: break
-        case .unavailable(let r): return L10n.tr(Agent.unavailableText("\(r)"))
-        @unknown default: break
-        }
         var prompt = "Today is " + Sys.fmtFull(Date()) + ". Data for today:\n" + facts.joined(separator: "\n")
         if !screens.isEmpty {
             let joined = screens.joined(separator: "\n---\n")
             prompt += "\n\nText recognized from the user’s Screen Time / notification screenshots (may contain OCR errors):\n" + String(joined.prefix(1500))
         }
         let ins = "You are the user’s personal assistant. Write a daily recap from the data given: first one sentence summarizing the day, then three short sections — what was done, where the time went (only if screenshot data exists), and what to watch tomorrow — at most three items each. Use only the data provided and never invent anything. Keep it under 300 characters/words. " + L10n.replyDirective
+
+        // 本地大模型优先
+        if LocalLLM.shared.canUse {
+            do {
+                let out = try await LocalLLM.shared.generate(instructions: ins, prompt: prompt, maxTokens: 500, temperature: 0.3) { text in onUpdate(text) }
+                return out.isEmpty ? L10n.tr("模型没有返回内容，请再试一次。") : out
+            } catch {
+                return L10n.f("本地模型出错：{}", String(error.localizedDescription.prefix(120)))
+            }
+        }
+
+        switch SystemLanguageModel.default.availability {
+        case .available: break
+        case .unavailable(let r): return L10n.tr(Agent.unavailableText("\(r)"))
+        @unknown default: break
+        }
         let session = LanguageModelSession(instructions: ins)
         var last = ""
         do {

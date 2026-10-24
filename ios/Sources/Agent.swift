@@ -163,6 +163,8 @@ final class Agent: ObservableObject {
             reply = r.0
         } else if files.isEmpty, let r = await Router.handle(t) {
             reply = r
+        } else if files.isEmpty, let r = await localIntent(t) {
+            reply = r
         } else if files.isEmpty, let r = await scriptIntent(t, mid: mid) {
             reply = r
         } else if t.isEmpty, allImages {
@@ -214,6 +216,38 @@ final class Agent: ObservableObject {
             return "已创建脚本技能「\(r.name)」，试运行结果：\n\(r.out)\n\n以后说「运行 \(r.name)」，或到 工具箱 → 脚本技能 里使用。"
         }
         return "没能生成可运行的脚本（\(r.out)）。请把需求说具体一点：输入是什么、希望输出什么。"
+    }
+
+    // 本地大模型可用时，用它从任何语言的句子里提取闹钟、提醒、日程（中文规则没认出来的也会在这里兜底）
+    private func localIntent(_ t: String) async -> String? {
+        guard LocalLLM.shared.canUse, t.count <= 200 else { return nil }
+        let low = t.lowercased()
+        let ks = ["alarm", "remind", "wake", "schedule", "meeting", "appointment", "timer", "闹钟", "提醒", "叫我", "日程", "起床", "アラーム", "リマインド", "알람", "알림", "despert", "recordar", "rappel", "réveil", "wecker", "erinner", "sveglia", "ricord", "будильник", "напомни", "uyandır", "hatırlat", "đánh thức", "nhắc", "ปลุก", "เตือน", "bangunkan", "ingatkan", "منبه", "ذكرني", "अलार्म", "याद"]
+        guard ks.contains(where: { low.contains($0) }) else { return nil }
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyy-MM-dd'T'HH:mm (EEEE)"
+        let ins = "You extract scheduling intents from a message. Current local time: \(f.string(from: Date())). Output ONE JSON object only, no other text: {\"type\":\"alarm|reminder|event|none\",\"title\":\"short title in the user's language\",\"time\":\"yyyy-MM-dd'T'HH:mm\",\"repeat\":\"none|daily|weekly\"}. Resolve relative times such as tomorrow or in 2 hours from the current time. Use type none if the message does not ask to set an alarm, reminder or calendar event."
+        guard let text = await LLM.complete(instructions: ins, prompt: t, maxTokens: 120, temperature: 0.1),
+              let a = text.firstIndex(of: "{"), let b = text.lastIndex(of: "}"), a < b,
+              let data = String(text[a...b]).data(using: .utf8),
+              let j = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let type = j["type"] as? String, type != "none",
+              let ts = j["time"] as? String else { return nil }
+        let p = DateFormatter()
+        p.locale = Locale(identifier: "en_US_POSIX")
+        p.dateFormat = "yyyy-MM-dd'T'HH:mm"
+        guard let d = p.date(from: String(ts.prefix(16))) else { return nil }
+        let title = (j["title"] as? String) ?? ""
+        let r = j["repeat"] as? String
+        let rep = r == "daily" ? 1 : (r == "weekly" ? 7 : 0)
+        Live.set(.working)
+        switch type {
+        case "alarm": return await Sys.alarm(d, title, rep: rep)
+        case "reminder": return await Sys.reminder(title.isEmpty ? t : title, d, rep: rep)
+        case "event": return await Sys.event(title.isEmpty ? t : title, d)
+        default: return nil
+        }
     }
 
     // MARK: 图片与文件理解
@@ -285,6 +319,19 @@ final class Agent: ObservableObject {
             + "需要列表或代码时用 Markdown。不知道就直说不知道，不要编造。"
     }
 
+    // 本地大模型的系统提示：没有工具调用，所以不再提到 remember / recall 之类的工具
+    nonisolated static func localInstructions(time: Bool) -> String {
+        let concise = (UserDefaults.standard.object(forKey: "style") as? Int ?? 0) == 0
+        var s = "你是 " + Brand.name + "，运行在用户 iPhone 上的个人助理。" + L10n.replyDirective
+        s += "只回答用户当前这一个问题：先直接给结论，再补充必要的说明；不要复述问题，不要扯到别的话题，不要自我介绍，没有把握就说不确定，不要编造。"
+        s += concise ? "回答控制在 150 字以内。" : "回答可以详细一些，条理清楚。"
+        s += "需要列表或代码时用 Markdown。"
+        if time { s += "\n现在是" + Sys.fmtFull(Date()) + "，时区" + TimeZone.current.identifier + "。" }
+        let p = Evolve.prompt()
+        if p != Evolve.defaultPrompt { s += "\n用户偏好补充：" + String(p.prefix(300)) }
+        return s
+    }
+
     nonisolated static func needsTime(_ t: String, _ tools: [any Tool]) -> Bool {
         if tools.contains(where: { $0 is SetAlarm || $0 is AddReminder || $0 is AddEvent }) { return true }
         let low = t.lowercased()
@@ -324,7 +371,75 @@ final class Agent: ObservableObject {
         return nil
     }
 
+    // MARK: 本地大模型回答
+    // 知识库检索、网页读取、「记住」都由代码完成，结果写进提示，模型只负责组织回答
+    private func localContext(_ t: String) async -> String {
+        var out: [String] = []
+        let low = t.lowercased()
+        if ["之前", "上次", "知识库", "笔记", "资料", "我的文档", "我存的", "记得", "earlier", "notes", "knowledge"].contains(where: { low.contains($0) }) {
+            let hits = KB.shared.search(t, k: 4)
+            if !hits.isEmpty { out.append("知识库里的相关资料：\n" + hits.map { "- " + String($0.prefix(300)) }.joined(separator: "\n")) }
+        }
+        if let u = Self.firstURL(in: t) {
+            let page = await Self.fetchPage(u)
+            if !page.isEmpty { out.append("网页内容（\(u.absoluteString)）：\n" + page) }
+        }
+        if ["记住", "记一下", "别忘了", "remember"].contains(where: { low.contains($0) }) {
+            KB.shared.add("记忆", t)
+        }
+        return out.joined(separator: "\n\n")
+    }
+
+    nonisolated static func firstURL(in t: String) -> URL? {
+        guard let det = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue) else { return nil }
+        let m = det.firstMatch(in: t, range: NSRange(location: 0, length: (t as NSString).length))
+        guard let u = m?.url, u.scheme == "http" || u.scheme == "https" else { return nil }
+        return u
+    }
+
+    nonisolated static func fetchPage(_ u: URL) async -> String {
+        var req = URLRequest(url: u)
+        req.timeoutInterval = 15
+        guard let (d, _) = try? await URLSession.shared.data(for: req) else { return "" }
+        var s = String(decoding: d.prefix(300_000), as: UTF8.self)
+        for p in ["<script[\\s\\S]*?</script>", "<style[\\s\\S]*?</style>", "<[^>]+>"] {
+            s = s.replacingOccurrences(of: p, with: " ", options: .regularExpression)
+        }
+        s = s.replacingOccurrences(of: "&nbsp;", with: " ").replacingOccurrences(of: "&amp;", with: "&")
+        s = s.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+        return String(s.prefix(3500))
+    }
+
+    private func askLocal(_ t: String, ctx: String, mid: UUID, imageMode: Bool) async -> String {
+        Live.set(.thinking)
+        if !LocalLLM.shared.isLoaded { update(mid, L10n.tr("正在载入本地模型…")) }
+        let extra = imageMode ? "" : await localContext(t)
+        let hist = imageMode ? "" : msgs.dropLast(2).suffix(4).filter { !$0.text.isEmpty }
+            .map { ($0.role == "user" ? "用户：" : "助理：") + String($0.text.prefix(200)) }
+            .joined(separator: "\n")
+        let ins = Self.localInstructions(time: Self.needsTime(t, []))
+        let prompt: String
+        if imageMode {
+            prompt = Self.imagePrompt(t, ctx)
+        } else {
+            prompt = (hist.isEmpty ? "" : "此前的对话（仅供参考）：\n\(hist)\n\n")
+                + (extra.isEmpty ? "" : extra + "\n\n")
+                + "用户当前的问题（只回答这个问题）：\(t)\(ctx)"
+        }
+        do {
+            let out = try await LocalLLM.shared.generate(instructions: ins, prompt: prompt, maxTokens: 900, temperature: 0.4) { text in
+                MainActor.assumeIsolated { self.update(mid, text) }
+            }
+            return out.isEmpty ? L10n.tr("模型没有返回内容") : out
+        } catch {
+            if Task.isCancelled || error is CancellationError { return partial(mid) }
+            return L10n.f("本地模型出错：{}", String(error.localizedDescription.prefix(120)))
+        }
+    }
+
     private func ask(_ t: String, ctx: String, hasFile: Bool, mid: UUID, imageMode: Bool = false) async -> String {
+        // 本地大模型已下载并开启时优先用它
+        if LocalLLM.shared.canUse { return await askLocal(t, ctx: ctx, mid: mid, imageMode: imageMode) }
         switch SystemLanguageModel.default.availability {
         case .available:
             break
