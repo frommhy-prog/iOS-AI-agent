@@ -95,11 +95,11 @@ enum L10n {
         return SystemLanguageModel.default.supportsLocale(Locale(identifier: l.locale))
     }
 
-    // 告诉本机模型用哪种语言回答；模型不支持该语言时回退到英语
+    // 告诉模型用哪种语言回答。本地大模型（Qwen）对主流语言都支持；仅在只有系统模型且它不支持该语言时回退到英语
     static var replyDirective: String {
         let c = code
         if c == "zh-Hans" { return "使用简体中文回答。" }
-        let name = modelSupports(c) ? info.english : (modelSupports("en") ? "English" : "Simplified Chinese")
+        let name = (modelSupports(c) || UserDefaults.standard.string(forKey: "localModelID") != nil) ? info.english : (modelSupports("en") ? "English" : "Simplified Chinese")
         return "Always reply in \(name)."
     }
 
@@ -155,7 +155,7 @@ enum L10n {
     }
 
     private static func table(_ c: String) -> [String: String] {
-        c == "en" ? L10nTable.en : (caches[c] ?? [:])
+        c == "en" ? L10nTable.all : (caches[c] ?? [:])
     }
 
     private static func templates(_ c: String) -> [(NSRegularExpression, String)] {
@@ -256,7 +256,7 @@ enum L10n {
     // 还没有译文的键（英文表里有的都翻译）
     static func missingKeys(_ c: String) -> [String] {
         let have = cacheCopy(c)
-        return L10nTable.en.keys.filter { have[$0] == nil }.sorted()
+        return L10nTable.all.keys.filter { have[$0] == nil }.sorted()
     }
 
     // 模板里的 {} 换成 QZ1、QZ2…，避免翻译时被改坏；返回占位个数

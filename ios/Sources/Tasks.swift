@@ -22,12 +22,11 @@ enum Tasks {
 
     static func alarms() -> [Row] { DB.shared.rows("SELECT * FROM alarm ORDER BY due") }
 
-    // 任务内容用当前应用语言生成（通知里显示的就是这段文字）
+    // 任务内容用当前应用语言生成（通知里显示的就是这段文字）。本地大模型可用就用它，否则用系统模型
     static func gen(_ instr: String) async -> String {
-        let s = LanguageModelSession(
-            tools: [Recall(), FetchURL()],
-            instructions: "你是个人助理。直接输出任务结果，简洁，不超过120字，不要出现代码。需要资料时先调用工具。" + L10n.replyDirective + "当前时间：" + Sys.fmtFull(Date())
-        )
+        let ins = "你是个人助理。直接输出任务结果，简洁，不超过120字，不要出现代码。需要资料时先调用工具。" + L10n.replyDirective + "当前时间：" + Sys.fmtFull(Date())
+        if let r = await LLM.complete(instructions: ins, prompt: instr, maxTokens: 300, temperature: 0.4) { return r }
+        let s = LanguageModelSession(tools: [Recall(), FetchURL()], instructions: ins)
         return (try? await s.respond(to: instr).content) ?? ""
     }
 
@@ -93,6 +92,12 @@ enum Evolve {
 
     static func log() -> [Row] { DB.shared.rows("SELECT id, ts, summary, facts, ver FROM evo ORDER BY id DESC LIMIT 30") }
 
+    // 一次性生成：本地大模型优先，其次系统模型
+    private static func ask(_ ins: String, _ prompt: String) async -> String? {
+        if let r = await LLM.complete(instructions: ins, prompt: prompt, maxTokens: 400, temperature: 0.2) { return r }
+        return try? await LanguageModelSession(instructions: ins).respond(to: prompt).content
+    }
+
     // 返回本次进化的摘要
     @discardableResult
     static func run(force: Bool = false) async -> String {
@@ -102,8 +107,7 @@ enum Evolve {
             return force ? "还没有足够的新对话可供进化。" : ""
         }
         let logs = String(rows.map { $0.s("role") + ": " + String($0.s("text").prefix(150)) }.joined(separator: "\n").suffix(1200))
-        let s = LanguageModelSession(instructions: "反思引擎，只输出结果，不闲聊")
-        guard let facts = try? await s.respond(to: "提炼不超过5条关于用户的长期事实或偏好，每行一条；没有就只输出“无”：\n" + logs).content else {
+        guard let facts = await ask("反思引擎，只输出结果，不闲聊", "提炼不超过5条关于用户的长期事实或偏好，每行一条；没有就只输出“无”：\n" + logs) else {
             return force ? "进化时模型没有返回结果，稍后再试。" : ""
         }
         var learned: [String] = []
@@ -117,7 +121,7 @@ enum Evolve {
         var promptNote = "提示词保持不变"
         if rows.count >= 12 {
             let ask = "根据对话中暴露的缺陷改进系统提示，不超过300字，必须保留“remember”“recall”两个工具名，只输出新提示。\n当前提示：\n" + prompt() + "\n对话：\n" + logs
-            if let p = try? await LanguageModelSession().respond(to: ask).content,
+            if let p = await Self.ask("你是提示词工程师", ask),
                p.contains("remember"), p.contains("recall"), p.count < 600 {
                 ver = saveVersion(p)
                 promptNote = "系统提示已更新到第 \(ver) 版"

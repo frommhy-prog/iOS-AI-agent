@@ -8,6 +8,7 @@ struct AppSettingsView: View {
     @AppStorage("style") private var style = 0
     @AppStorage("autoSend") private var autoSend = false
     @AppStorage("liveOn") private var liveOn = true
+    @ObservedObject private var local = LocalLLM.shared
     @State private var exportURL: URL?
     @State private var confirmChats = false
     @State private var confirmKB = false
@@ -22,6 +23,10 @@ struct AppSettingsView: View {
         }
     }
 
+    private var localSummary: String {
+        local.canUse ? L10n.f("已启用：{}", local.selectedName) : L10n.tr("未启用")
+    }
+
     var body: some View {
         NavigationStack {
             Form {
@@ -32,6 +37,7 @@ struct AppSettingsView: View {
                         Text("深色").tag(2)
                     }
                     .pickerStyle(.segmented)
+                    .onChange(of: appearance) { _, v in AppTheme.apply(v) }
                 }
                 Section("语言") {
                     NavigationLink {
@@ -45,6 +51,15 @@ struct AppSettingsView: View {
                     }
                 }
                 Section("对话") {
+                    NavigationLink {
+                        LocalModelPage()
+                    } label: {
+                        HStack {
+                            Text("本地大模型")
+                            Spacer()
+                            Text(localSummary).foregroundStyle(Brand.sub)
+                        }
+                    }
                     Toggle("保存对话记录", isOn: $saveHistory).toggleStyle(SwitchToggleStyle(tint: .green))
                     Picker("回答风格", selection: $style) {
                         Text("简洁").tag(0)
@@ -77,7 +92,7 @@ struct AppSettingsView: View {
                         LogoMark(size: 48)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(Brand.name).font(.headline)
-                            Text(L10n.tr(Brand.tagline) + " · " + L10n.tr("版本") + " 0.8").font(.subheadline).foregroundStyle(.secondary)
+                            Text(L10n.tr(Brand.tagline) + " · " + L10n.tr("版本") + " 0.9").font(.subheadline).foregroundStyle(.secondary)
                         }
                     }
                     .padding(.vertical, 4)
