@@ -11,6 +11,7 @@ struct SkillDraft {
 }
 
 // 脚本技能：自然语言描述 → 自动生成 → 自动测试运行 → 失败自动修复 → 保存。运行用系统自带的 JavaScriptCore。
+// 生成代码优先用本地大模型（已下载时），否则用系统自带模型。
 enum Skills {
     static let rules = """
     你是 JavaScript 工程师。只写纯 JavaScript（ES5 语法），不要使用 setTimeout、Promise、async、await、require、import、fetch、document、window。
@@ -67,16 +68,52 @@ enum Skills {
         return runCode(code, input)
     }
 
-    // 创建并运行：最多尝试 3 次，失败时把错误交还给模型修复
+    typealias Draft = (name: String, desc: String, sample: String, code: String)
+
+    // 本地大模型：用分段格式而不是 JSON，多行代码不会因为转义出错
+    static func parseDraft(_ t: String) -> Draft? {
+        guard let cr = t.range(of: "CODE:") else { return nil }
+        let head = String(t[..<cr.lowerBound])
+        let code = String(t[cr.upperBound...])
+        func field(_ k: String) -> String {
+            guard let r = head.range(of: k + ":") else { return "" }
+            let rest = head[r.upperBound...]
+            let line = rest.split(separator: "\n", maxSplits: 1, omittingEmptySubsequences: false).first.map(String.init) ?? ""
+            return line.trimmingCharacters(in: .whitespaces)
+        }
+        let name = field("NAME")
+        let desc = field("DESC")
+        let sample = field("SAMPLE")
+        guard !name.isEmpty, !code.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        return (name, desc.isEmpty ? name : desc, sample, code)
+    }
+
+    private static func localDraft(_ spec: String, _ last: String, _ err: String, _ attempt: Int) async -> Draft? {
+        var prompt = "需求：" + spec + "\n\n严格按下面的格式输出，不要输出别的：\nNAME: 技能名（4到8个汉字）\nDESC: 一句话用途\nSAMPLE: 测试用的示例输入\nCODE:\nfunction(input){ ... return 字符串; }"
+        if attempt > 1 { prompt += "\n\n上次的代码：\n" + last + "\n运行结果：" + err + "\n请修复后重新按格式输出。" }
+        guard let text = await LLM.complete(instructions: rules, prompt: prompt, maxTokens: 900, temperature: 0.2) else { return nil }
+        return parseDraft(text)
+    }
+
+    // 创建并运行：最多尝试 3 次，失败时把错误交还模型修复
     static func create(_ spec: String, progress: @escaping (String) -> Void) async -> (name: String, ok: Bool, out: String) {
         var last = ""
         var err = ""
+        let local = await LLM.localAvailable()
         for attempt in 1...3 {
             progress(attempt == 1 ? "正在编写脚本…" : "正在修复脚本（第 \(attempt) 次尝试）…")
-            let s = LanguageModelSession(instructions: rules)
-            var prompt = "需求：" + spec
-            if attempt > 1 { prompt += "\n上次的代码：\n" + last + "\n运行结果：" + err + "\n请修复后重新输出。" }
-            guard let d = try? await s.respond(to: prompt, generating: SkillDraft.self).content else {
+            var draft: Draft?
+            if local {
+                draft = await localDraft(spec, last, err, attempt)
+            } else {
+                var prompt = "需求：" + spec
+                if attempt > 1 { prompt += "\n上次的代码：\n" + last + "\n运行结果：" + err + "\n请修复后重新输出。" }
+                let s = LanguageModelSession(instructions: rules)
+                if let g = try? await s.respond(to: prompt, generating: SkillDraft.self).content {
+                    draft = (g.name, g.desc, g.sample, g.code)
+                }
+            }
+            guard let d = draft else {
                 err = "模型没有返回内容"
                 continue
             }

@@ -10,6 +10,16 @@ final class NotifDelegate: NSObject, UNUserNotificationCenterDelegate {
     }
 }
 
+// 主题：直接设置所有窗口的深浅色，弹出的页面（设置、分享、相册…）也会跟着变，不会再出现「主界面深色、弹窗浅色」
+enum AppTheme {
+    static func apply(_ v: Int) {
+        let style: UIUserInterfaceStyle = v == 1 ? .light : (v == 2 ? .dark : .unspecified)
+        for case let s as UIWindowScene in UIApplication.shared.connectedScenes {
+            for w in s.windows { w.overrideUserInterfaceStyle = style }
+        }
+    }
+}
+
 @main
 struct TSTZBotApp: App {
     @Environment(\.scenePhase) private var phase
@@ -39,10 +49,15 @@ struct TSTZBotApp: App {
             RootView()
                 .preferredColorScheme(scheme)
                 .tint(Brand.accent)
+                .onAppear { AppTheme.apply(appearance) }
+                .onChange(of: appearance) { _, v in AppTheme.apply(v) }
                 .onOpenURL { URLRouter.handle($0) }
         }
         .onChange(of: phase) { _, p in
-            if p == .active { Task { await Tasks.refresh(); await Evolve.run() } }
+            if p == .active {
+                AppTheme.apply(appearance)
+                Task { await Tasks.refresh(); await Evolve.run() }
+            }
         }
     }
 }
@@ -79,7 +94,7 @@ func hideKeyboard() {
     UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
 }
 
-// 应用标志：深海蓝底 + 白色 Z 形折线 + 金色箭头（图形定义在 Shared/BrandMark.swift，与桌面图标、灵动岛共用）
+// 应用标志（图形定义在 Shared/BrandMark.swift，与桌面图标、灵动岛共用）
 struct LogoMark: View {
     var size: CGFloat = 64
     var body: some View { BrandMark(size: size) }

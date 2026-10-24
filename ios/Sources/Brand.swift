@@ -1,7 +1,8 @@
 import SwiftUI
 import UIKit
 
-// 统一的外观：暖色背景，强调色随系统深浅色变为黑或白（不再使用彩色主题）。主题只保留「跟随系统 / 浅色 / 深色」。
+// 统一的外观：按 OSVIA 设计包的配色。
+// 深色：深灰黑底 #0B0F14、荷绿强调 #00E5A8；浅色：偏冷的中性浅灰（不再泛黄）、黑色强调。
 enum Brand {
     // 应用名 OSVIA，品牌语「Search · Think · Act」
     static let name = "OSVIA"
@@ -15,15 +16,15 @@ enum Brand {
         Color(UIColor { $0.userInterfaceStyle == .dark ? hex(dark) : hex(light) })
     }
 
-    // 强调色：浅色模式为黑，深色模式为白；放在它上面的文字用 onAccent
-    static let accent = dyn(0x1F1E1D, 0xF2F0E9)
-    static let onAccent = dyn(0xFFFFFF, 0x1F1E1D)
-    static let bg = dyn(0xF5F4EE, 0x262624)
-    static let card = dyn(0xFFFFFF, 0x30302E)
-    static let userBubble = dyn(0xE9E6DB, 0x3A3A37)
-    static let codeBg = dyn(0xEDEBE3, 0x1F1E1D)
-    static let line = dyn(0xE0DDD2, 0x45443F)
-    static let ink = dyn(0x1F1E1D, 0xF2F0E9)
-    static let sub = dyn(0x7B786F, 0xA19E94)
+    // 强调色：浅色模式为黑，深色模式为荷绿；放在它上面的文字用 onAccent
+    static let accent = dyn(0x0B0F14, 0x00E5A8)
+    static let onAccent = dyn(0xFFFFFF, 0x0B0F14)
+    static let bg = dyn(0xF4F6F8, 0x0B0F14)
+    static let card = dyn(0xFFFFFF, 0x131A20)
+    static let userBubble = dyn(0xE6EAEE, 0x1B242C)
+    static let codeBg = dyn(0xECEFF2, 0x0F151A)
+    static let line = dyn(0xDCE1E6, 0x27302F)
+    static let ink = dyn(0x0B0F14, 0xF5F7FA)
+    static let sub = dyn(0x68717A, 0xA4AAA8)
     static let serif = Font.system(size: 17, design: .serif)
 }
