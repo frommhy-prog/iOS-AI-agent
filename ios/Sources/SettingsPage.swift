@@ -15,6 +15,8 @@ struct AppSettingsView: View {
     @State private var showClock = false
     @State private var copied = false
 
+    private let themes: [(Int, String)] = [(0, "跟随系统"), (1, "浅色"), (2, "深色")]
+
     private var modelStatus: String {
         switch SystemLanguageModel.default.availability {
         case .available: return "可用"
@@ -30,14 +32,21 @@ struct AppSettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
+                // 三个选项做成系统风格的勾选行：点哪个就立刻切换，勾选状态始终和当前主题一致
                 Section("外观") {
-                    Picker("主题", selection: $appearance) {
-                        Text("跟随系统").tag(0)
-                        Text("浅色").tag(1)
-                        Text("深色").tag(2)
+                    ForEach(themes, id: \.0) { item in
+                        Button {
+                            appearance = item.0
+                            AppTheme.apply(item.0)
+                        } label: {
+                            HStack {
+                                Text(item.1).foregroundStyle(Brand.ink)
+                                Spacer()
+                                if appearance == item.0 { Image(systemName: "checkmark").foregroundStyle(Brand.ink) }
+                            }
+                            .contentShape(Rectangle())
+                        }
                     }
-                    .pickerStyle(.segmented)
-                    .onChange(of: appearance) { _, v in AppTheme.apply(v) }
                 }
                 Section("语言") {
                     NavigationLink {
@@ -92,7 +101,7 @@ struct AppSettingsView: View {
                         LogoMark(size: 48)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(Brand.name).font(.headline)
-                            Text(L10n.tr(Brand.tagline) + " · " + L10n.tr("版本") + " 0.9").font(.subheadline).foregroundStyle(.secondary)
+                            Text(L10n.tr(Brand.tagline) + " · " + L10n.tr("版本") + " 1.0").font(.subheadline).foregroundStyle(.secondary)
                         }
                     }
                     .padding(.vertical, 4)
@@ -111,7 +120,7 @@ struct AppSettingsView: View {
             .navigationTitle("设置")
             .navigationBarTitleDisplayMode(.inline)
             .onAppear { exportURL = exportAll() }
-            .sheet(isPresented: $showClock) { ClockSetupView().presentationBackground(Brand.bg) }
+            .sheet(isPresented: $showClock) { ClockSetupView().presentationBackground(Brand.page) }
             .confirmationDialog("清空所有对话？此操作无法撤销", isPresented: $confirmChats, titleVisibility: .visible) {
                 Button("清空", role: .destructive) { Agent.shared.clearAll() }
             }

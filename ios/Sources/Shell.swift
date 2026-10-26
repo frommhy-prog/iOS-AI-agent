@@ -97,7 +97,7 @@ struct DrawerView: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 9)
-            .background(Brand.userBubble.opacity(0.7))
+            .background(Brand.userBubble)
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             .padding(.horizontal, 14)
             .padding(.bottom, 8)
@@ -191,9 +191,11 @@ struct DrawerView: View {
     }
 }
 
-// 从侧栏打开的功能页：关闭按钮由 PageChrome.swift 里的 NavigationStack 放在导航栏左侧，不再叠在系统返回键上
+// 从侧栏打开的功能页：关闭按钮由 PageChrome.swift 里的 NavigationStack 放在导航栏左侧，不再叠在系统返回键上。
+// 底色用系统「分组背景」，列表与表单直接使用系统样式；弹出后再把当前深浅色写一遍，保证和主界面一致。
 struct PageSheet: View {
     let page: AppPage
+    @AppStorage("appearance") private var appearance = 0
 
     var body: some View {
         Group {
@@ -207,8 +209,8 @@ struct PageSheet: View {
             }
         }
         .environment(\.isPageRoot, true)
-        .scrollContentBackground(.hidden)
-        .background(Brand.bg.ignoresSafeArea())
-        .presentationBackground(Brand.bg)
+        .background(Brand.page.ignoresSafeArea())
+        .presentationBackground(Brand.page)
+        .onAppear { DispatchQueue.main.async { AppTheme.apply(appearance) } }
     }
 }
