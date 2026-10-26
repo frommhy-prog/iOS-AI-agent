@@ -1,0 +1,161 @@
+import Foundation
+import Security
+
+// MARK: 云端大脑（可选）
+// 用户自己填一个免费的 AI 服务密钥，回答会明显更聪明。
+// 请求由手机直接发给用户选的服务商，不经过任何开发者服务器；密钥只存在本机钥匙串。
+// 没填密钥时一切照旧，使用本机模型。
+
+enum SecretStore {
+    private static func base(_ account: String) -> [String: Any] {
+        [kSecClass as String: kSecClassGenericPassword,
+         kSecAttrService as String: "OSVIA",
+         kSecAttrAccount as String: account]
+    }
+
+    static func get(_ account: String) -> String {
+        var q = base(account)
+        q[kSecReturnData as String] = true
+        q[kSecMatchLimit as String] = kSecMatchLimitOne
+        var out: AnyObject?
+        guard SecItemCopyMatching(q as CFDictionary, &out) == errSecSuccess, let d = out as? Data else { return "" }
+        return String(decoding: d, as: UTF8.self)
+    }
+
+    static func set(_ account: String, _ value: String) {
+        SecItemDelete(base(account) as CFDictionary)
+        guard !value.isEmpty else { return }
+        var add = base(account)
+        add[kSecValueData as String] = Data(value.utf8)
+        add[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
+        SecItemAdd(add as CFDictionary, nil)
+    }
+}
+
+struct CloudPreset: Identifiable, Hashable {
+    let id: String
+    let name: String
+    let base: String
+    let model: String
+    let note: String
+    let keyURL: String
+}
+
+enum CloudError: LocalizedError {
+    case config(String)
+    case http(Int, String)
+
+    var errorDescription: String? {
+        switch self {
+        case .config(let s):
+            return s
+        case .http(let c, let body):
+            switch c {
+            case 401, 403: return "密钥不对或没有权限（\(c)）"
+            case 404: return "接口地址或模型名不对（404）"
+            case 429: return "请求太频繁，或免费额度用完了（429）"
+            default: return "服务商返回错误 \(c)：" + String(body.prefix(120))
+            }
+        }
+    }
+}
+
+@MainActor
+enum CloudLLM {
+    static var lastError = ""
+
+    static let presets: [CloudPreset] = [
+        CloudPreset(id: "zhipu", name: "智谱 GLM（免费，国内直连）",
+                    base: "https://open.bigmodel.cn/api/paas/v4", model: "glm-4.7-flash",
+                    note: "手机号注册即可，GLM-Flash 系列长期免费，中文很强。推荐大多数用户使用。",
+                    keyURL: "https://bigmodel.cn/usercenter/proj-mgmt/apikeys"),
+        CloudPreset(id: "silicon", name: "硅基流动（有免费模型，国内直连）",
+                    base: "https://api.siliconflow.cn/v1", model: "Qwen/Qwen3-8B",
+                    note: "手机号注册，有多个免费开源模型，也可换成它家的其他模型。",
+                    keyURL: "https://cloud.siliconflow.cn/account/ak"),
+        CloudPreset(id: "gemini", name: "Google Gemini（免费，需海外网络）",
+                    base: "https://generativelanguage.googleapis.com/v1beta/openai", model: "gemini-2.5-flash",
+                    note: "用 Google 账号免费申请，国外用户首选；中国大陆需要能访问 Google。",
+                    keyURL: "https://aistudio.google.com/apikey"),
+        CloudPreset(id: "groq", name: "Groq（免费，需海外网络）",
+                    base: "https://api.groq.com/openai/v1", model: "llama-3.3-70b-versatile",
+                    note: "速度极快，有免费额度；中国大陆需要海外网络。",
+                    keyURL: "https://console.groq.com/keys"),
+        CloudPreset(id: "deepseek", name: "DeepSeek（很便宜，国内直连）",
+                    base: "https://api.deepseek.com", model: "deepseek-chat",
+                    note: "新用户有赠送额度，之后按量付费，价格很低，推理和代码强。",
+                    keyURL: "https://platform.deepseek.com/api_keys"),
+        CloudPreset(id: "custom", name: "自定义（OpenAI 兼容接口）",
+                    base: "", model: "",
+                    note: "填写任意兼容 OpenAI 的接口地址和模型名。", keyURL: "")
+    ]
+
+    static var enabled: Bool { UserDefaults.standard.object(forKey: "cloudOn") as? Bool ?? true }
+    static var presetID: String { UserDefaults.standard.string(forKey: "cloudPreset") ?? "zhipu" }
+    static var preset: CloudPreset { presets.first { $0.id == presetID } ?? presets[0] }
+
+    static var base: String {
+        let custom = (UserDefaults.standard.string(forKey: "cloudBase") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        return presetID == "custom" ? custom : preset.base
+    }
+
+    static var model: String {
+        let m = (UserDefaults.standard.string(forKey: "cloudModel") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        return m.isEmpty ? preset.model : m
+    }
+
+    static var key: String { SecretStore.get("cloudKey") }
+    static var ready: Bool { enabled && !key.isEmpty && !base.isEmpty && !model.isEmpty }
+    static var summary: String { ready ? preset.name.components(separatedBy: "（")[0] : "未设置" }
+
+    // 流式对话（OpenAI 兼容 /chat/completions）。返回完整回答；onText 每次给出到目前为止的全文。
+    static func stream(_ messages: [[String: String]], maxTokens: Int = 1000, temperature: Double = 0.4,
+                       onText: @escaping (String) -> Void) async throws -> String {
+        let root = base.trimmingCharacters(in: CharacterSet(charactersIn: "/ \n"))
+        guard let url = URL(string: root + "/chat/completions") else { throw CloudError.config("接口地址不正确") }
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.timeoutInterval = 60
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue("Bearer " + key, forHTTPHeaderField: "Authorization")
+        var body: [String: Any] = ["model": model, "messages": messages, "stream": true,
+                                   "max_tokens": maxTokens, "temperature": temperature]
+        // 混合思考模型：关闭长篇思考，回答更快
+        if root.contains("bigmodel.cn") { body["thinking"] = ["type": "disabled"] }
+        if root.contains("siliconflow") { body["enable_thinking"] = false }
+        req.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let (bytes, resp) = try await URLSession.shared.bytes(for: req)
+        if let h = resp as? HTTPURLResponse, h.statusCode != 200 {
+            var err = ""
+            for try await line in bytes.lines {
+                err += line
+                if err.count > 400 { break }
+            }
+            throw CloudError.http(h.statusCode, err)
+        }
+        var acc = ""
+        for try await line in bytes.lines {
+            guard line.hasPrefix("data:") else { continue }
+            let d = line.dropFirst(5).trimmingCharacters(in: .whitespaces)
+            if d == "[DONE]" { break }
+            guard let data = d.data(using: .utf8),
+                  let j = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let ch = (j["choices"] as? [[String: Any]])?.first,
+                  let delta = ch["delta"] as? [String: Any],
+                  let c = delta["content"] as? String, !c.isEmpty else { continue }
+            acc += c
+            onText(LocalLLM.clean(acc))
+        }
+        return LocalLLM.clean(acc)
+    }
+
+    static func test() async -> String {
+        do {
+            let r = try await stream([["role": "user", "content": "用一句话说你好"]], maxTokens: 60, temperature: 0.2) { _ in }
+            return r.isEmpty ? "连接成功，但模型没有返回内容，请检查模型名" : "连接成功：" + String(r.prefix(80))
+        } catch {
+            return "连接失败：" + error.localizedDescription
+        }
+    }
+}
