@@ -163,6 +163,8 @@ final class Agent: ObservableObject {
             reply = r.0
         } else if files.isEmpty, let r = await Router.handle(t) {
             reply = r
+        } else if files.isEmpty, let r = await Features.route(t) {
+            reply = r
         } else if files.isEmpty, let r = await localIntent(t) {
             reply = r
         } else if files.isEmpty, let r = await scriptIntent(t, mid: mid) {
@@ -198,14 +200,30 @@ final class Agent: ObservableObject {
         persist("assistant", body, files)
     }
 
+    // 最近几轮对话，作为真正的多轮上下文交给模型。剔除出错、停止这类没有信息量的回复，避免模型被它们带偏
+    private func history() -> [Brain.Turn] {
+        msgs.dropLast(2).suffix(8).compactMap { m in
+            let t = m.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            if t.isEmpty { return nil }
+            if m.role != "user" {
+                let bad = ["出错", "没能完成", "没有返回内容", "已停止", "暂时不可用"]
+                if bad.contains(where: { t.contains($0) }) { return nil }
+            }
+            return Brain.Turn(role: m.role == "user" ? "user" : "assistant", text: String(t.prefix(600)))
+        }
+    }
+
     // 「做一个……脚本」：确定性处理，不交给小模型瞎猜
     private func scriptIntent(_ t: String, mid: UUID) async -> String? {
         guard t.contains("脚本") || t.contains("技能") else { return nil }
         let make = ["做一个", "做个", "写一个", "写个", "创建一个", "创建个", "生成一个", "生成个", "帮我做", "帮我写", "编一个", "弄一个"]
         guard make.contains(where: { t.contains($0) }) else { return nil }
-        let banned = ["点赞", "自动点击", "模拟点击", "连点", "刷赞", "刷粉", "刷量", "自动关注", "自动评论", "自动刷", "抢单", "外挂"]
+        if t.contains("挖矿") {
+            return "做不到：iOS 不允许 App 在后台长时间满负载运行，手机也算不动挖矿，脚本技能更不行。\n脚本技能只能处理文字、读网页、查知识库，比如整理文案、提取网页要点、批量改写。想做其中一种，直接告诉我。"
+        }
+        let banned = ["点赞", "自动点击", "模拟点击", "连点", "刷赞", "刷粉", "刷量", "自动关注", "自动评论", "自动刷", "抢单", "外挂", "抢购", "秒杀", "抢票", "自动下单", "自动交易", "刷单"]
         if banned.contains(where: { t.contains($0) }) {
-            return "做不到：iOS 不允许一个 App 自动点击或操作别的 App（点赞、关注、刷视频都不行），快捷指令也一样。\n脚本技能只能处理文字、读网页、查知识库，比如整理文案、提取网页要点、批量改写。想做其中一种，直接告诉我。"
+            return "做不到：iOS 不允许一个 App 自动点击或操作别的 App（点赞、关注、下单、抢购都不行），快捷指令也一样。\n脚本技能只能处理文字、读网页、查知识库，比如整理文案、提取网页要点、批量改写。想做其中一种，直接告诉我。"
         }
         update(mid, L10n.tr("正在编写脚本…"))
         Live.set(.working, "正在编写脚本")
@@ -218,9 +236,9 @@ final class Agent: ObservableObject {
         return "没能生成可运行的脚本（\(r.out)）。请把需求说具体一点：输入是什么、希望输出什么。"
     }
 
-    // 本地大模型可用时，用它从任何语言的句子里提取闹钟、提醒、日程（中文规则没认出来的也会在这里兜底）
+    // 本地大模型可用时，用它从任何语言的句子里提取闹钟、提醒、日程（中文规则没认出来的也会在这里兜底）。云端大脑启用时由它自己调用工具，这里跳过
     private func localIntent(_ t: String) async -> String? {
-        guard LocalLLM.shared.canUse, t.count <= 200 else { return nil }
+        guard LocalLLM.shared.canUse, !CloudLLM.ready, t.count <= 200 else { return nil }
         let low = t.lowercased()
         let ks = ["alarm", "remind", "wake", "schedule", "meeting", "appointment", "timer", "闹钟", "提醒", "叫我", "日程", "起床", "アラーム", "リマインド", "알람", "알림", "despert", "recordar", "rappel", "réveil", "wecker", "erinner", "sveglia", "ricord", "будильник", "напомни", "uyandır", "hatırlat", "đánh thức", "nhắc", "ปลุก", "เตือน", "bangunkan", "ingatkan", "منبه", "ذكرني", "अलार्म", "याद"]
         guard ks.contains(where: { low.contains($0) }) else { return nil }
@@ -300,7 +318,7 @@ final class Agent: ObservableObject {
         if txt.isEmpty { return "\n[文件] 已收到，无法读取文字" }
         if txt.count <= 1200 { return "\n[文件内容] \(txt)" }
         KB.shared.upsert(u.lastPathComponent, txt)
-        return "\n[文件] 内容较长（\(txt.count) 字），已存入知识库，需要时调用 recall 检索"
+        return "\n[文件] 内容较长（\(txt.count) 字），已存入知识库，可以直接就这份文件向我提问"
     }
 
     // MARK: 模型
@@ -316,7 +334,7 @@ final class Agent: ObservableObject {
             + "你是 " + Brand.name + "，运行在用户 iPhone 上的助理。只回答用户当前这一个问题，不要复述问题，不要扔到别的话题，信息够用时不要反问。"
             + "你看不到图片，只能依据识别出的类别和文字回答，不要说无法读取图片。"
             + (concise ? "回答要简短。" : "回答可以详细一些。")
-            + "需要列表或代码时用 Markdown。不知道就直说不知道，不要编造。"
+            + "需要列表或代码时用 Markdown。不知道就直说不知道，不要编造。不要向用户提及任何内部工具的名字。"
     }
 
     // 本地大模型的系统提示：没有工具调用，所以不再提到 remember / recall 之类的工具
@@ -371,8 +389,16 @@ final class Agent: ObservableObject {
         return nil
     }
 
-    // MARK: 本地大模型回答
-    // 知识库检索、网页读取、「记住」都由代码完成，结果写进提示，模型只负责组织回答
+    // MARK: 本机模型回答
+    // 联网搜索、知识库检索、网页读取、「记住」都由代码完成，结果写进提示，模型只负责组织回答
+    private func webContext(_ t: String) async -> String {
+        guard WebSearch.needs(t), Self.firstURL(in: t) == nil else { return "" }
+        Live.set(.searching)
+        let hits = await WebSearch.search(t)
+        if hits.isEmpty { return "" }
+        return "联网搜索结果（回答时请说明信息来自网络，仅依据下面内容，不要编造）：\n" + WebSearch.format(hits)
+    }
+
     private func localContext(_ t: String) async -> String {
         var out: [String] = []
         let low = t.lowercased()
@@ -384,6 +410,8 @@ final class Agent: ObservableObject {
             let page = await Self.fetchPage(u)
             if !page.isEmpty { out.append("网页内容（\(u.absoluteString)）：\n" + page) }
         }
+        let web = await webContext(t)
+        if !web.isEmpty { out.append(web) }
         if ["记住", "记一下", "别忘了", "remember"].contains(where: { low.contains($0) }) {
             KB.shared.add("记忆", t)
         }
@@ -414,7 +442,7 @@ final class Agent: ObservableObject {
         Live.set(.thinking)
         if !LocalLLM.shared.isLoaded { update(mid, L10n.tr("正在载入本地模型…")) }
         let extra = imageMode ? "" : await localContext(t)
-        let hist = imageMode ? "" : msgs.dropLast(2).suffix(4).filter { !$0.text.isEmpty }
+        let hist = imageMode ? "" : history().suffix(4)
             .map { ($0.role == "user" ? "用户：" : "助理：") + String($0.text.prefix(200)) }
             .joined(separator: "\n")
         let ins = Self.localInstructions(time: Self.needsTime(t, []))
@@ -437,7 +465,27 @@ final class Agent: ObservableObject {
         }
     }
 
+    // 回答入口：先用云端大脑（用户填了免费密钥才会启用），失败或没启用就用本机模型
     private func ask(_ t: String, ctx: String, hasFile: Bool, mid: UUID, imageMode: Bool = false) async -> String {
+        var note = ""
+        if CloudLLM.ready {
+            Live.set(.thinking)
+            let r = await Brain.ask(
+                history: imageMode ? [] : history(),
+                user: imageMode ? Self.imagePrompt(t, ctx) : t,
+                ctx: imageMode ? "" : ctx,
+                status: { s in self.update(mid, L10n.tr(s)) },
+                onText: { s in self.update(mid, s) })
+            if let r { return r.isEmpty ? partial(mid) : r }
+            note = L10n.tr("云端大脑暂时不可用") + "：" + CloudLLM.lastError
+            update(mid, "")
+        }
+        let out = await askOffline(t, ctx: ctx, hasFile: hasFile, mid: mid, imageMode: imageMode)
+        if note.isEmpty || Task.isCancelled { return out }
+        return out + "\n\n（" + note + "；" + L10n.tr("这次用了本机模型") + "）"
+    }
+
+    private func askOffline(_ t: String, ctx: String, hasFile: Bool, mid: UUID, imageMode: Bool) async -> String {
         // 本地大模型已下载并开启时优先用它
         if LocalLLM.shared.canUse { return await askLocal(t, ctx: ctx, mid: mid, imageMode: imageMode) }
         switch SystemLanguageModel.default.availability {
@@ -451,9 +499,10 @@ final class Agent: ObservableObject {
         let tools: [any Tool] = imageMode ? [] : Self.tools(for: t, hasFile: hasFile)
         // 灵动岛：需要联网读网页时显示「搜索」，否则显示「思考」
         Live.set(tools.contains { $0 is FetchURL } ? .searching : .thinking)
-        let hist = imageMode ? "" : msgs.dropLast(2).suffix(4).filter { !$0.text.isEmpty }
+        let hist = imageMode ? "" : history().suffix(4)
             .map { ($0.role == "user" ? "用户：" : "助理：") + String($0.text.prefix(200)) }
             .joined(separator: "\n")
+        let web = imageMode ? "" : await webContext(t)
         let names = Connectors.all().map { $0.s("name") }.joined(separator: "、")
         let extra = names.isEmpty ? "" : "\n可调用的连接器：" + names
         let ins = Self.instructions(time: Self.needsTime(t, tools)) + extra
@@ -465,7 +514,7 @@ final class Agent: ObservableObject {
                 prompt = attempt < 2 ? Self.imagePrompt(t, ctx) : t
             } else {
                 switch attempt {
-                case 0: prompt = (hist.isEmpty ? "" : "此前的对话（仅供参考）：\n\(hist)\n\n") + "用户当前的问题（只回答这个问题）：\(t)\(ctx)"
+                case 0: prompt = (hist.isEmpty ? "" : "此前的对话（仅供参考）：\n\(hist)\n\n") + (web.isEmpty ? "" : web + "\n\n") + "用户当前的问题（只回答这个问题）：\(t)\(ctx)"
                 case 1: prompt = "用户当前的问题：\(t)" + String(ctx.prefix(300))
                 default: prompt = t
                 }
