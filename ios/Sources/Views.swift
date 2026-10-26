@@ -10,13 +10,26 @@ final class NotifDelegate: NSObject, UNUserNotificationCenterDelegate {
     }
 }
 
-// 主题：直接设置所有窗口的深浅色，弹出的页面（设置、分享、相册…）也会跟着变，不会再出现「主界面深色、弹窗浅色」
+// 主题：只用 UIKit 的深浅色覆盖，写到每个窗口，并逐层写到所有已弹出的页面（设置、分享、相册……）。
+// 不再使用 SwiftUI 的 preferredColorScheme：它会给已弹出的页面留下旧的深浅色，导致「主界面变了、设置页没变」。
 enum AppTheme {
+    static func style(_ v: Int) -> UIUserInterfaceStyle { v == 1 ? .light : (v == 2 ? .dark : .unspecified) }
+
     static func apply(_ v: Int) {
-        let style: UIUserInterfaceStyle = v == 1 ? .light : (v == 2 ? .dark : .unspecified)
+        let st = style(v)
         for case let s as UIWindowScene in UIApplication.shared.connectedScenes {
-            for w in s.windows { w.overrideUserInterfaceStyle = style }
+            for w in s.windows {
+                w.overrideUserInterfaceStyle = st
+                paint(w.rootViewController, st)
+            }
         }
+    }
+
+    private static func paint(_ vc: UIViewController?, _ st: UIUserInterfaceStyle) {
+        guard let vc else { return }
+        vc.overrideUserInterfaceStyle = st
+        for c in vc.children { paint(c, st) }
+        paint(vc.presentedViewController, st)
     }
 }
 
@@ -36,18 +49,9 @@ struct TSTZBotApp: App {
         }
     }
 
-    private var scheme: ColorScheme? {
-        switch appearance {
-        case 1: return .light
-        case 2: return .dark
-        default: return nil
-        }
-    }
-
     var body: some Scene {
         WindowGroup {
             RootView()
-                .preferredColorScheme(scheme)
                 .tint(Brand.accent)
                 .onAppear { AppTheme.apply(appearance) }
                 .onChange(of: appearance) { _, v in AppTheme.apply(v) }
