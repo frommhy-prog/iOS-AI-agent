@@ -44,6 +44,7 @@
 		9E37CA693379DE9AF71C601C /* TSTZLive.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF218E53F50DB3F539B8391E /* TSTZLive.swift */; };
 		9E55A2CB312D641662E57E9B /* SettingsPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB850DA508C86CA4750B5071 /* SettingsPage.swift */; };
 		A037DF9FAB3BED7B489873E6 /* Gallery.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6A09CCD0326EA3DB1C432D3 /* Gallery.swift */; };
+		A224208BC206B66FC206C333 /* LocalBrain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B02AC60B22F531858FDA83C /* LocalBrain.swift */; };
 		A45E36B906035062DDC49012 /* CloudPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = C6688134F06AB2E822C59DA9 /* CloudPage.swift */; };
 		A6BF2D18325B8B86E62E7CEE /* BrandMark.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB0E12EE10CDB0ED7E033F3D /* BrandMark.swift */; };
 		A9D94EDD313AB5D5CE28D159 /* Media.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6F4D3785AFFFB8B9081D560 /* Media.swift */; };
@@ -110,6 +111,7 @@
 		5FEFA9DDDAD17E868ACA8C3D /* Connectors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Connectors.swift; sourceTree = "<group>"; };
 		621A2DE7A16D900DCDF95AEB /* Views.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views.swift; sourceTree = "<group>"; };
 		63544C01F659AE1A39087556 /* L10nExtra.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10nExtra.swift; sourceTree = "<group>"; };
+		6B02AC60B22F531858FDA83C /* LocalBrain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalBrain.swift; sourceTree = "<group>"; };
 		75C04C115313851A87B33173 /* L10nTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10nTable.swift; sourceTree = "<group>"; };
 		768C409EAE9C5BBFF33875C9 /* Tasks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tasks.swift; sourceTree = "<group>"; };
 		842889668D353C46758EAFE1 /* ShareService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareService.swift; sourceTree = "<group>"; };
@@ -196,6 +198,7 @@
 				75C04C115313851A87B33173 /* L10nTable.swift */,
 				3AA79573A5B84506B375A122 /* L10nUI.swift */,
 				B22543CF5123098D67A28DBF /* Live.swift */,
+				6B02AC60B22F531858FDA83C /* LocalBrain.swift */,
 				D4D4E47BE6184502B2CC9FCB /* LocalLLM.swift */,
 				90081A66780933DAD60969F4 /* LocalModelPage.swift */,
 				C4973DF07EFF3C7C67DA0C1F /* Markdown.swift */,
@@ -384,6 +387,7 @@
 				C2ED212985C17076BB9EA99B /* L10nTable.swift in Sources */,
 				7E8F0BDE74CDD0857C171EA6 /* L10nUI.swift in Sources */,
 				3C05A0D94A27DFFF28B70CE5 /* Live.swift in Sources */,
+				A224208BC206B66FC206C333 /* LocalBrain.swift in Sources */,
 				848A3B9660F305CD25EBA433 /* LocalLLM.swift in Sources */,
 				23A5FFEFF3A43747A84ECF12 /* LocalModelPage.swift in Sources */,
 				43DDD5A2A9C74E5284487F8C /* Markdown.swift in Sources */,
