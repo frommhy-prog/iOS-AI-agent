@@ -10,8 +10,21 @@ struct SkillDraft {
     @Guide(description: "JavaScript 函数源码，形式 function(input){ ... return 字符串; }") var code: String
 }
 
+// 只放行一次：超时和正常结束谁先到谁生效
+private final class Once: @unchecked Sendable {
+    private let lock = NSLock()
+    private var done = false
+    func claim() -> Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        if done { return false }
+        done = true
+        return true
+    }
+}
+
 // 脚本技能：自然语言描述 → 自动生成 → 自动测试运行 → 失败自动修复 → 保存。运行用系统自带的 JavaScriptCore。
-// 生成代码优先用本地大模型（已下载时），否则用系统自带模型。
+// 生成代码优先用云端大脑（已填密钥时）和本地大模型（已下载时），否则用系统自带模型。
 enum Skills {
     static let rules = """
     你是 JavaScript 工程师。只写纯 JavaScript（ES5 语法），不要使用 setTimeout、Promise、async、await、require、import、fetch、document、window。
@@ -68,9 +81,23 @@ enum Skills {
         return runCode(code, input)
     }
 
+    // 在后台线程运行并限时：脚本死循环或网络很慢时不会卡住界面，超时就放弃等待
+    static func runAsync(_ name: String, _ input: String, timeout: Double = 12) async -> (Bool, String) {
+        await withCheckedContinuation { (c: CheckedContinuation<(Bool, String), Never>) in
+            let once = Once()
+            DispatchQueue.global(qos: .userInitiated).async {
+                let r = Skills.run(name, input)
+                if once.claim() { c.resume(returning: r) }
+            }
+            DispatchQueue.global().asyncAfter(deadline: .now() + timeout) {
+                if once.claim() { c.resume(returning: (false, "脚本运行超时（超过 \(Int(timeout)) 秒），已放弃等待。")) }
+            }
+        }
+    }
+
     typealias Draft = (name: String, desc: String, sample: String, code: String)
 
-    // 本地大模型：用分段格式而不是 JSON，多行代码不会因为转义出错
+    // 大模型（云端或本地）：用分段格式而不是 JSON，多行代码不会因为转义出错
     static func parseDraft(_ t: String) -> Draft? {
         guard let cr = t.range(of: "CODE:") else { return nil }
         let head = String(t[..<cr.lowerBound])
