@@ -2,7 +2,7 @@ import SwiftUI
 import Translation
 
 enum AppPage: String, Identifiable {
-    case kb, tools, tasks, digest, evolve, settings
+    case kb, tools, tasks, digest, evolve, settings, translate
     var id: String { rawValue }
 }
 
@@ -206,6 +206,7 @@ struct PageSheet: View {
             case .digest: DigestView()
             case .evolve: EvolveHome()
             case .settings: AppSettingsView()
+            case .translate: NavigationStack { ScreenTranslateView() }
             }
         }
         .environment(\.isPageRoot, true)
