@@ -49,6 +49,7 @@
 		A6BF2D18325B8B86E62E7CEE /* BrandMark.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB0E12EE10CDB0ED7E033F3D /* BrandMark.swift */; };
 		A9D94EDD313AB5D5CE28D159 /* Media.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6F4D3785AFFFB8B9081D560 /* Media.swift */; };
 		AB67C8F4DFB72C8EED4C6C2E /* ClockBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0369341F792E658B4665A60 /* ClockBridge.swift */; };
+		B1C44E24D1198C628A576C3D /* Weather.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6511CF4D97EC4AA19B8A77FA /* Weather.swift */; };
 		B5EAFDD5470F2DE11F3466C5 /* Digest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56A37C2E32AA205E642B78C8 /* Digest.swift */; };
 		BD38BC0DDF0B1AA2288B9843 /* ChatParts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8B40865156B8A5F8C6B5531E /* ChatParts.swift */; };
 		C2ED212985C17076BB9EA99B /* L10nTable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75C04C115313851A87B33173 /* L10nTable.swift */; };
@@ -111,6 +112,7 @@
 		5FEFA9DDDAD17E868ACA8C3D /* Connectors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Connectors.swift; sourceTree = "<group>"; };
 		621A2DE7A16D900DCDF95AEB /* Views.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Views.swift; sourceTree = "<group>"; };
 		63544C01F659AE1A39087556 /* L10nExtra.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10nExtra.swift; sourceTree = "<group>"; };
+		6511CF4D97EC4AA19B8A77FA /* Weather.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Weather.swift; sourceTree = "<group>"; };
 		6B02AC60B22F531858FDA83C /* LocalBrain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalBrain.swift; sourceTree = "<group>"; };
 		75C04C115313851A87B33173 /* L10nTable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = L10nTable.swift; sourceTree = "<group>"; };
 		768C409EAE9C5BBFF33875C9 /* Tasks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tasks.swift; sourceTree = "<group>"; };
@@ -217,6 +219,7 @@
 				A7EA5758BB1969A0CCAB1237 /* TasksPage.swift */,
 				05408064C5C05006B3B3FC2B /* Tools.swift */,
 				621A2DE7A16D900DCDF95AEB /* Views.swift */,
+				6511CF4D97EC4AA19B8A77FA /* Weather.swift */,
 				E4C7FE1331ACC091A34C64F6 /* WebSearch.swift */,
 			);
 			path = Sources;
@@ -406,6 +409,7 @@
 				0D2B7F6DDF3BE3AAE71BE80E /* TasksPage.swift in Sources */,
 				7FC7A04B4A9080AB60333E65 /* Tools.swift in Sources */,
 				47C97D24B171177E5A6C4B71 /* Views.swift in Sources */,
+				B1C44E24D1198C628A576C3D /* Weather.swift in Sources */,
 				69C9D21A09F0214626E71357 /* WebSearch.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
