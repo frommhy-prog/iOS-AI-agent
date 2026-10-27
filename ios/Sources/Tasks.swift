@@ -22,12 +22,31 @@ enum Tasks {
 
     static func alarms() -> [Row] { DB.shared.rows("SELECT * FROM alarm ORDER BY due") }
 
-    // 任务内容用当前应用语言生成（通知里显示的就是这段文字）。本地大模型可用就用它，否则用系统模型
+    // 任务内容用当前应用语言生成（通知里显示的就是这段文字）。
+    // 天气、新闻这类要实时数据的任务，先把真实数据取回来，再让模型整理成几句话；否则模型只能凭空编。
     static func gen(_ instr: String) async -> String {
-        let ins = "你是个人助理。直接输出任务结果，简洁，不超过120字，不要出现代码。需要资料时先调用工具。" + L10n.replyDirective + "当前时间：" + Sys.fmtFull(Date())
-        if let r = await LLM.complete(instructions: ins, prompt: instr, maxTokens: 300, temperature: 0.4) { return r }
+        var data = ""
+        var weatherText = ""
+        if Weather.words.contains(where: { instr.contains($0) }) {
+            let typed = Weather.city(from: instr)
+            let city = typed.isEmpty ? (DB.shared.kv("weather.city") ?? "") : typed
+            if !city.isEmpty, let w = await Weather.report(city: city) {
+                weatherText = w
+                data += "实时天气数据：\n" + w + "\n\n"
+            }
+        }
+        if data.isEmpty, WebSearch.needs(instr) {
+            let hits = await WebSearch.search(instr)
+            if !hits.isEmpty { data += "联网搜索结果：\n" + WebSearch.format(hits) + "\n\n" }
+        }
+        let ins = "你是个人助理。直接输出任务结果，简洁，不超过120字，不要出现代码。"
+            + (data.isEmpty ? "需要资料时先调用工具。" : "只依据下面给出的资料，不要编造。")
+            + L10n.replyDirective + "当前时间：" + Sys.fmtFull(Date())
+        let prompt = data + "任务：" + instr
+        if let r = await LLM.complete(instructions: ins, prompt: prompt, maxTokens: 300, temperature: 0.4) { return r }
+        if !weatherText.isEmpty { return weatherText }
         let s = LanguageModelSession(tools: [Recall(), FetchURL()], instructions: ins)
-        return (try? await s.respond(to: instr).content) ?? ""
+        return (try? await s.respond(to: prompt).content) ?? ""
     }
 
     // 返回本次处理的任务数
@@ -70,12 +89,17 @@ enum Tasks {
     }
 }
 
-// 进化：增量提炼长期事实入知识库，并谨慎地改写系统提示（版本化，可回滚），每次都留下记录
+// 进化：增量提炼长期事实入知识库，每次都留下记录。
+// 不再自动改写系统提示：小模型改出来的提示词必须带上 remember、recall 两个工具名，
+// 这些内部字眼会被拼进每次请求，反而让大脑更糊涂。旧版本记录保留，但不再生效。
 enum Evolve {
     static let defaultPrompt = "你是用户的私人助理，回答简洁直接，使用简体中文。需要记住的信息调用 remember；需要回忆或查资料调用 recall。涉及文件转换的请求必须调用对应工具完成，不要编造结果。"
 
     static func prompt() -> String {
-        DB.shared.rows("SELECT body FROM prompt ORDER BY ver DESC LIMIT 1").first?.s("body") ?? defaultPrompt
+        let latest = DB.shared.rows("SELECT body FROM prompt ORDER BY ver DESC LIMIT 1").first?.s("body") ?? defaultPrompt
+        // 旧版本自动改写出来的提示词带着内部工具名，一律不用
+        if latest.contains("remember") || latest.contains("recall") { return defaultPrompt }
+        return latest
     }
 
     static func versions() -> [Row] { DB.shared.rows("SELECT ver, body, ts FROM prompt ORDER BY ver DESC LIMIT 8") }
@@ -92,7 +116,7 @@ enum Evolve {
 
     static func log() -> [Row] { DB.shared.rows("SELECT id, ts, summary, facts, ver FROM evo ORDER BY id DESC LIMIT 30") }
 
-    // 一次性生成：本地大模型优先，其次系统模型
+    // 一次性生成：云端大脑与本地大模型优先，其次系统模型
     private static func ask(_ ins: String, _ prompt: String) async -> String? {
         if let r = await LLM.complete(instructions: ins, prompt: prompt, maxTokens: 400, temperature: 0.2) { return r }
         return try? await LanguageModelSession(instructions: ins).respond(to: prompt).content
@@ -117,18 +141,8 @@ enum Evolve {
         }
         DB.shared.setKV("evolve.last", String(maxId))
         DB.shared.setKV("evolve.time", String(Date().timeIntervalSince1970))
-        var ver = 0
-        var promptNote = "提示词保持不变"
-        if rows.count >= 12 {
-            let ask = "根据对话中暴露的缺陷改进系统提示，不超过300字，必须保留“remember”“recall”两个工具名，只输出新提示。\n当前提示：\n" + prompt() + "\n对话：\n" + logs
-            if let p = await Self.ask("你是提示词工程师", ask),
-               p.contains("remember"), p.contains("recall"), p.count < 600 {
-                ver = saveVersion(p)
-                promptNote = "系统提示已更新到第 \(ver) 版"
-            }
-        }
-        let summary = "分析了 \(rows.count) 条新对话；新增 \(learned.count) 条记忆；\(promptNote)"
-        DB.shared.run("INSERT INTO evo(ts,summary,facts,ver) VALUES(?,?,?,?)", [Date().timeIntervalSince1970, summary, learned.joined(separator: "\n"), ver])
+        let summary = "分析了 \(rows.count) 条新对话；新增 \(learned.count) 条记忆；提示词保持不变"
+        DB.shared.run("INSERT INTO evo(ts,summary,facts,ver) VALUES(?,?,?,?)", [Date().timeIntervalSince1970, summary, learned.joined(separator: "\n"), 0])
         return summary
     }
 }
