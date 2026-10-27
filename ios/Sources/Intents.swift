@@ -1,5 +1,6 @@
 import AppIntents
 import Foundation
+import UniformTypeIdentifiers
 
 // 这些动作会自动出现在系统「快捷指令」App 里，可配合「自动化」定时触发，也可被其他应用调用
 struct AddToKB: AppIntent {
@@ -48,9 +49,21 @@ struct QuickReminder: AppIntent {
     }
 }
 
+// 翻译屏幕：接收「截屏」动作的结果；不传图片时翻译相册里最新的一张截图
+struct TranslateScreenIntent: AppIntent {
+    static let title: LocalizedStringResource = "翻译屏幕"
+    static let openAppWhenRun = true
+    @Parameter(title: "截屏", supportedContentTypes: [.image]) var image: IntentFile?
+    @MainActor func perform() async throws -> some IntentResult {
+        ScreenTranslator.shared.request(data: image?.data)
+        return .result()
+    }
+}
+
 struct AgentShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(intent: AskAgent(), phrases: ["Ask \(.applicationName)"], shortTitle: "询问助理", systemImageName: "sparkles")
         AppShortcut(intent: SearchKB(), phrases: ["Search \(.applicationName)"], shortTitle: "检索知识库", systemImageName: "magnifyingglass")
+        AppShortcut(intent: TranslateScreenIntent(), phrases: ["Translate screen with \(.applicationName)"], shortTitle: "翻译屏幕", systemImageName: "character.bubble")
     }
 }
