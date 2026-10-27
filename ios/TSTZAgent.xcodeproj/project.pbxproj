@@ -15,6 +15,7 @@
 		12FD0B56358C9F5E0AB36C0A /* Inputs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 538B1AE356CDE5429BD0C0FF /* Inputs.swift */; };
 		1C2617D8A34CDF3E7F4EFDCD /* BotActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = C387607AEA72EC82BAB7D840 /* BotActivity.swift */; };
 		1F42E993AAF26B2D12CB768D /* CloudLLM.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1377330D273751A2CBDA508D /* CloudLLM.swift */; };
+		2200E280D764501FA8BC725A /* ScreenTranslate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 006579300A03EF9DD91433BF /* ScreenTranslate.swift */; };
 		23A5FFEFF3A43747A84ECF12 /* LocalModelPage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90081A66780933DAD60969F4 /* LocalModelPage.swift */; };
 		2405425FCCFE6D2C655F6357 /* KB.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2278739C9AFDEB72BE37F77B /* KB.swift */; };
 		26B6FFC36C855C2723342760 /* TSTZLive.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = CA43F639E4E53E643A17976D /* TSTZLive.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -88,6 +89,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		006579300A03EF9DD91433BF /* ScreenTranslate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenTranslate.swift; sourceTree = "<group>"; };
 		05408064C5C05006B3B3FC2B /* Tools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tools.swift; sourceTree = "<group>"; };
 		079E08E36F2DDC80E544B87F /* Nlp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Nlp.swift; sourceTree = "<group>"; };
 		0A7706A2EDC544CE7303A816 /* Brain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Brain.swift; sourceTree = "<group>"; };
@@ -202,6 +204,7 @@
 				38CA3DA4AE3253250B57597B /* PageChrome.swift */,
 				438EC194EEB4ADC78229C1DD /* Pages.swift */,
 				89CEF7EFD9393FE7C57411B1 /* Photo.swift */,
+				006579300A03EF9DD91433BF /* ScreenTranslate.swift */,
 				FB850DA508C86CA4750B5071 /* SettingsPage.swift */,
 				842889668D353C46758EAFE1 /* ShareService.swift */,
 				0B3988D25E932C47C55B3D21 /* Shell.swift */,
@@ -389,6 +392,7 @@
 				318CEC404D0F5287F0C51ECD /* PageChrome.swift in Sources */,
 				E203B621242D87C2CBE3070F /* Pages.swift in Sources */,
 				5370F2BF1C7ED6D0B4D73107 /* Photo.swift in Sources */,
+				2200E280D764501FA8BC725A /* ScreenTranslate.swift in Sources */,
 				9E55A2CB312D641662E57E9B /* SettingsPage.swift in Sources */,
 				48A9D7894F6E3964FFF17AF0 /* ShareService.swift in Sources */,
 				8F3C8295C25979991F73F8AF /* Shell.swift in Sources */,
