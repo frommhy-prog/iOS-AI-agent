@@ -1,10 +1,11 @@
 import Foundation
 
-// 中文自然语言时间解析：明早十点、一周后下午三点、每天早上8点、30分钟后……
+// 中文自然语言时间解析：明早十点、一周后下午三点、每天早上8点、30分钟后、10月30日下午3点、5号……
 enum Nlp {
     struct Res {
         var date: Date?
         var rep = 0          // 0 一次，1 每天，7 每周
+        var clock = false    // 话里有没有明确的几点几分（或「N 分钟后」）；只说「明天」不算
         var rest = ""        // 去掉时间与口令词后的事项内容
     }
 
@@ -55,12 +56,15 @@ enum Nlp {
     static func parse(_ input: String, now: Date = Date()) -> Res {
         var s = input
         let cal = Calendar.current
+        let startToday = cal.startOfDay(for: now)
         var res = Res()
         var dayOff: Int?
+        var absBase: Date?
         var weekday: Int?
         var nextWeek = false
         var rel: TimeInterval?
         var period = ""
+        var explicitHour = false
         let np = "(\\d+|[零〇一二两三四五六七八九十]+)"
 
         if let g = take(&s, "(半|\(np))\\s*个?\\s*(小时|钟头|分钟|分)\\s*(?:后|以后|之后)") {
@@ -82,7 +86,18 @@ enum Nlp {
         }
 
         if rel == nil && dayOff == nil {
-            if take(&s, "大后天") != nil { dayOff = 3 }
+            if let g = take(&s, "\(np)\\s*月\\s*\(np)\\s*[日号]") {
+                // 10月30日、十月三十号：已经过去的日期算明年
+                if let mo = num(g[1]), let dd = num(g[2]), (1...12).contains(mo), (1...31).contains(dd) {
+                    var c = cal.dateComponents([.year], from: now)
+                    c.month = mo
+                    c.day = dd
+                    if var d = cal.date(from: c) {
+                        if d < startToday { d = cal.date(byAdding: .year, value: 1, to: d) ?? d }
+                        absBase = d
+                    }
+                }
+            } else if take(&s, "大后天") != nil { dayOff = 3 }
             else if take(&s, "后天") != nil { dayOff = 2 }
             else if let g = take(&s, "明(?:天|日|早|晨|晚)") {
                 dayOff = 1
@@ -96,6 +111,18 @@ enum Nlp {
                 weekday = wd(g[1]); nextWeek = true
             } else if let g = take(&s, "(?:周|星期|礼拜)([一二三四五六日天])") {
                 weekday = wd(g[1])
+            } else if let g = take(&s, "(\\d{1,2})\\s*[号日](?![线楼门口车院库店座层])") {
+                // 5号：这个月的 5 号，已经过去就算下个月
+                if let dd = Int(g[1]), (1...31).contains(dd) {
+                    var c = cal.dateComponents([.year, .month], from: now)
+                    c.day = dd
+                    var d = cal.date(from: c)
+                    if d == nil || d! < startToday {
+                        c.month = (c.month ?? 1) + 1
+                        d = cal.date(from: c)
+                    }
+                    absBase = d
+                }
             }
         }
 
@@ -107,9 +134,11 @@ enum Nlp {
                 if !g[1].isEmpty { period = g[1] }
                 hour = Int(g[2])
                 minute = Int(g[3]) ?? 0
+                explicitHour = true
             } else if let g = take(&s, "(\(periods))?\\s*(\\d{1,2}|[零〇一二两三四五六七八九十]{1,3})\\s*(?:点钟|点|时)\\s*(半|一刻|三刻|(\\d{1,2}|[零〇一二三四五六七八九十]{1,3})\\s*分?)?") {
                 if !g[1].isEmpty { period = g[1] }
                 hour = num(g[2])
+                explicitHour = hour != nil
                 switch g[3] {
                 case "半": minute = 30
                 case "一刻": minute = 15
@@ -141,14 +170,16 @@ enum Nlp {
                 }
             }
         }
+        res.clock = rel != nil || explicitHour
 
-        let startToday = cal.startOfDay(for: now)
         if let r = rel {
             res.date = now.addingTimeInterval(r)
-        } else if dayOff != nil || weekday != nil || hour != nil || res.rep > 0 {
+        } else if dayOff != nil || absBase != nil || weekday != nil || hour != nil || res.rep > 0 {
             let h = hour ?? 9
             var base = startToday
-            if let d = dayOff {
+            if let a = absBase {
+                base = a
+            } else if let d = dayOff {
                 base = cal.date(byAdding: .day, value: d, to: startToday) ?? startToday
             } else if let w = weekday {
                 let today = cal.component(.weekday, from: now)
@@ -156,7 +187,7 @@ enum Nlp {
                 base = cal.date(byAdding: .day, value: diff, to: startToday) ?? startToday
             }
             var d = cal.date(bySettingHour: h, minute: minute, second: 0, of: base) ?? base
-            if dayOff == nil && !(weekday != nil && nextWeek) && d <= now {
+            if dayOff == nil && absBase == nil && !(weekday != nil && nextWeek) && d <= now {
                 d = cal.date(byAdding: .day, value: weekday != nil ? 7 : 1, to: d) ?? d
             }
             res.date = d
@@ -175,12 +206,28 @@ enum Router {
     static func handle(_ t: String) async -> String? {
         func has(_ ks: [String]) -> Bool { ks.contains { t.contains($0) } }
         let p = Nlp.parse(t)
-        guard let d = p.date else { return nil }
         let alarmW = has(["闹钟", "起床", "叫醒", "闹铃"])
-        let aiW = has(["总结", "播报", "汇总", "整理", "告诉我", "查一下", "查询", "天气", "新闻", "生成", "分析", "汇报", "简报"])
         let eventW = has(["日程", "日历", "开会", "会议", "约会"])
         let remindW = has(["提醒", "记得", "别忘", "通知我", "叫我"])
         let timerW = has(["定时", "每天", "每日", "每周"])
+        // 下指令的口气（提醒我、帮我设、添加……）与提问的口气（吗、怎么、什么……）
+        let cmd = has(["提醒", "叫我", "叫醒", "通知我", "设置", "设定", "设闹钟", "定闹钟", "设个", "定个", "设一个", "创建", "添加", "新建", "安排", "加个", "加一个", "帮我", "记得", "别忘", "预约", "记一下", "订个"])
+        let q = has(["吗", "怎么", "如何", "为什么", "什么", "哪", "是不是", "能不能", "可以", "？", "?", "没响", "不响", "没有响", "失效"])
+
+        guard let d = p.date else {
+            // 想设闹钟却没说几点：直接问，不要交给模型瞎编一句「已设置」
+            if alarmW && cmd && !q { return "想几点？比如「明早7点叫我起床」「每天8点闹钟」。" }
+            return nil
+        }
+        // 「明天天气怎么样」「明天开会要带什么」是在提问，不是在下指令
+        if q && !cmd { return nil }
+        // 既没有具体几点、也没有指令词（只是句子里带了个「明天」）：不当成日程任务
+        if !(p.clock || p.rep > 0 || cmd) { return nil }
+
+        // 「提醒我查一下报告」是提醒；「每天8点告诉我天气」才是让助理去查并播报的任务
+        let aiStrong = has(["总结", "播报", "汇总", "汇报", "简报", "告诉我", "生成", "分析", "天气", "新闻", "查询", "查一下"])
+        let doW = alarmW || eventW || has(["提醒", "叫我", "通知我", "记得", "别忘"])
+        let aiW = aiStrong && !(doW && !has(["播报", "汇报", "简报", "告诉我", "总结", "汇总"]))
 
         let content = p.rest
         let soon = d.timeIntervalSinceNow < 8 * 3600 && d.timeIntervalSinceNow > 0
