@@ -337,12 +337,15 @@ final class Agent: ObservableObject {
             + "需要列表或代码时用 Markdown。不知道就直说不知道，不要编造。不要向用户提及任何内部工具的名字。"
     }
 
-    // 本地大模型的系统提示：没有工具调用，所以不再提到 remember / recall 之类的工具
+    // 本地大模型的系统提示：不再提到 remember / recall 之类的工具；工具说明由 LocalBrain 按需追加
     nonisolated static func localInstructions(time: Bool) -> String {
         let concise = (UserDefaults.standard.object(forKey: "style") as? Int ?? 0) == 0
         var s = "你是 " + Brand.name + "，运行在用户 iPhone 上的个人助理。" + L10n.replyDirective
-        s += "只回答用户当前这一个问题：先直接给结论，再补充必要的说明；不要复述问题，不要扯到别的话题，不要自我介绍，没有把握就说不确定，不要编造。"
-        s += concise ? "回答控制在 150 字以内。" : "回答可以详细一些，条理清楚。"
+        s += "回答原则：先直接给结论，再补充必要的说明；只回答用户当前这一个问题，不要复述问题，不要自我介绍，不要扯到别的话题。"
+        s += "遇到计算、换算、日期推算，先一步步算对再给结果。事实没把握就明说不确定，不要编造人名、数据、链接、版本号。"
+        s += "用户要方案或代码时，直接给能用的完整内容，不要只讲思路。"
+        s += "你做不到的事要直说：不能操作别的 App，不能代替用户点击屏幕，不能在后台常驻运行。"
+        s += concise ? "回答控制在 200 字以内（代码和必要的列表除外）。" : "回答可以详细一些，条理清楚。"
         s += "需要列表或代码时用 Markdown。"
         if time { s += "\n现在是" + Sys.fmtFull(Date()) + "，时区" + TimeZone.current.identifier + "。" }
         let p = Evolve.prompt()
@@ -390,7 +393,7 @@ final class Agent: ObservableObject {
     }
 
     // MARK: 本机模型回答
-    // 联网搜索、知识库检索、网页读取、「记住」都由代码完成，结果写进提示，模型只负责组织回答
+    // 联网搜索、知识库检索、网页读取、「记住」先由代码按关键词完成，结果写进提示；没命中关键词时，本地大模型可以自己决定要不要搜索（LocalBrain）
     private func webContext(_ t: String) async -> String {
         guard WebSearch.needs(t), Self.firstURL(in: t) == nil else { return "" }
         Live.set(.searching)
@@ -438,31 +441,26 @@ final class Agent: ObservableObject {
         return String(s.prefix(3500))
     }
 
+    // 本地大模型：真多轮历史（最近 6 条）+ 按需工具循环。已经给了联网结果或在看图时不开放工具
     private func askLocal(_ t: String, ctx: String, mid: UUID, imageMode: Bool) async -> String {
         Live.set(.thinking)
         if !LocalLLM.shared.isLoaded { update(mid, L10n.tr("正在载入本地模型…")) }
         let extra = imageMode ? "" : await localContext(t)
-        let hist = imageMode ? "" : history().suffix(4)
-            .map { ($0.role == "user" ? "用户：" : "助理：") + String($0.text.prefix(200)) }
-            .joined(separator: "\n")
+        let turns: [Brain.Turn] = imageMode ? [] : Array(history().suffix(6))
         let ins = Self.localInstructions(time: Self.needsTime(t, []))
-        let prompt: String
+        let user: String
         if imageMode {
-            prompt = Self.imagePrompt(t, ctx)
+            user = Self.imagePrompt(t, ctx)
         } else {
-            prompt = (hist.isEmpty ? "" : "此前的对话（仅供参考）：\n\(hist)\n\n")
-                + (extra.isEmpty ? "" : extra + "\n\n")
-                + "用户当前的问题（只回答这个问题）：\(t)\(ctx)"
+            user = (extra.isEmpty ? "" : extra + "\n\n") + "用户当前的问题（只回答这个问题）：\(t)\(ctx)"
         }
-        do {
-            let out = try await LocalLLM.shared.generate(instructions: ins, prompt: prompt, maxTokens: 900, temperature: 0.4) { text in
-                MainActor.assumeIsolated { self.update(mid, text) }
-            }
-            return out.isEmpty ? L10n.tr("模型没有返回内容") : out
-        } catch {
-            if Task.isCancelled || error is CancellationError { return partial(mid) }
-            return L10n.f("本地模型出错：{}", String(error.localizedDescription.prefix(120)))
-        }
+        let useTools = !imageMode && !extra.contains("联网搜索结果")
+        let out = await LocalBrain.ask(
+            instructions: ins, history: turns, user: user, tools: useTools,
+            status: { s in self.update(mid, L10n.tr(s)) },
+            onText: { s in self.update(mid, s) })
+        if Task.isCancelled { return partial(mid) }
+        return out.isEmpty ? L10n.tr("模型没有返回内容") : out
     }
 
     // 回答入口：先用云端大脑（用户填了免费密钥才会启用），失败或没启用就用本机模型
