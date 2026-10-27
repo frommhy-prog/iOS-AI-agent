@@ -8,6 +8,7 @@ struct AppSettingsView: View {
     @AppStorage("style") private var style = 0
     @AppStorage("autoSend") private var autoSend = false
     @AppStorage("liveOn") private var liveOn = true
+    @AppStorage("cloudOn") private var cloudOn = true
     @ObservedObject private var local = LocalLLM.shared
     @State private var exportURL: URL?
     @State private var confirmChats = false
@@ -27,6 +28,10 @@ struct AppSettingsView: View {
 
     private var localSummary: String {
         local.canUse ? L10n.f("已启用：{}", local.selectedName) : L10n.tr("未启用")
+    }
+
+    private var cloudSummary: String {
+        cloudOn ? L10n.tr(CloudLLM.summary) : L10n.tr("已关闭")
     }
 
     var body: some View {
@@ -60,6 +65,15 @@ struct AppSettingsView: View {
                     }
                 }
                 Section("对话") {
+                    NavigationLink {
+                        CloudPage()
+                    } label: {
+                        HStack {
+                            Text("云端大脑")
+                            Spacer()
+                            Text(cloudSummary).foregroundStyle(Brand.sub)
+                        }
+                    }
                     NavigationLink {
                         LocalModelPage()
                     } label: {
