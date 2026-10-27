@@ -129,18 +129,19 @@ struct ToolboxView: View {
         NavigationStack {
             ScrollView {
                 LazyVGrid(columns: [GridItem(.flexible(), spacing: 14), GridItem(.flexible())], spacing: 14) {
+                    card("屏幕翻译", "截图一键翻译整屏，译文贴回原位", "character.bubble") { ScreenTranslateView() }
                     card("文件转换", "图片、PDF、表格、视频互相转换", "arrow.triangle.2.circlepath") { ConvertView() }
-                    card("脚本技能", "一句话生成脚本，自动测试并运行", "wand.and.stars") { SkillsView() }
+                    card("脚本技能", "一句话生成处理文字的小脚本", "wand.and.stars") { SkillsView() }
                     card("连接器", "连接快捷指令、Scriptable 和各种接口", "link") { ConnectorsView() }
                     card("快捷指令", "把本 App 的动作加入系统快捷指令", "square.stack.3d.up.fill") { ShortcutsView() }
                     Button { showClock = true } label: { cardBody("系统时钟闹钟", "把闹钟写进「时钟」，并自检内置闹钟", "alarm") }
                 }
                 .padding(16)
             }
-            .background(Brand.bg)
+            .background(Brand.page)
             .navigationTitle("工具箱")
             .navigationBarTitleDisplayMode(.inline)
-            .sheet(isPresented: $showClock) { ClockSetupView().presentationBackground(Brand.bg) }
+            .sheet(isPresented: $showClock) { ClockSetupView().presentationBackground(Brand.page) }
         }
     }
 
@@ -156,7 +157,6 @@ struct ToolboxView: View {
         .padding(14)
         .background(Brand.card)
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(Brand.line, lineWidth: 1))
     }
 
     func card<D: View>(_ t: String, _ s: String, _ icon: String, @ViewBuilder _ dest: @escaping () -> D) -> some View {
@@ -181,6 +181,10 @@ struct SkillsView: View {
 
     var body: some View {
         List {
+            Section {
+                Text("脚本技能是处理文字的小脚本：整理文案、提取要点、批量改写、格式转换等。它看不到屏幕，也不能操作别的 App；翻译截图请用「屏幕翻译」。")
+                    .font(.footnote).foregroundStyle(.secondary)
+            }
             Section("用一句话创建") {
                 TextField("例如：把输入的文字倒过来", text: $spec, axis: .vertical).lineLimit(2...4)
                 Button { create() } label: {
@@ -260,31 +264,52 @@ struct SkillRunView: View {
     @State private var out = ""
     @State private var ok = true
     @State private var copied = false
+    @State private var desc = ""
+
+    // 名字像「屏幕翻译」的旧技能：脚本读不到屏幕，引导到新版
+    private var looksLikeScreenTranslate: Bool {
+        name.contains("翻译") && (name.contains("屏") || name.contains("截"))
+    }
+
+    private var link: String {
+        let n = name.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? name
+        return "tstzbot://run?name=\(n)&input="
+    }
 
     var body: some View {
         List {
+            if !desc.isEmpty {
+                Section("这个技能做什么") { Text(desc) }
+            }
+            if looksLikeScreenTranslate {
+                Section {
+                    NavigationLink {
+                        ScreenTranslateView()
+                    } label: { Label("改用新版「屏幕翻译」", systemImage: "character.bubble") }
+                    Text("脚本只能处理你输入的文字，看不到屏幕，所以这个技能运行不出结果。新版会识别截图里的文字，翻译后把译文贴回原位。")
+                        .font(.footnote).foregroundStyle(.secondary)
+                }
+            }
             Section("输入内容") {
-                TextField("可以留空", text: $input, axis: .vertical).lineLimit(1...5)
+                TextField("要处理的文字（有的技能可以留空）", text: $input, axis: .vertical).lineLimit(1...5)
             }
             Section {
-                Button {
-                    hideKeyboard()
-                    let r = Skills.run(name, input)
-                    ok = r.0
-                    out = r.1
-                } label: { Label("运行", systemImage: "play.fill").frame(maxWidth: .infinity) }
-                .buttonStyle(.borderedProminent)
-                .listRowBackground(Color.clear)
+                Button { run() } label: { Label("运行", systemImage: "play.fill").frame(maxWidth: .infinity) }
+                    .buttonStyle(.borderedProminent)
+                    .listRowBackground(Color.clear)
             }
             if !out.isEmpty {
                 Section("运行结果") {
                     Text(out).textSelection(.enabled).foregroundStyle(ok ? Color.primary : Color.red)
                 }
             }
+            Section("怎么用") {
+                Text("① 在上面「输入内容」里填要处理的文字，点「运行」。\n② 在对话里说：运行 \(name) 加上要处理的内容。\n③ 给快捷指令或其他 App 用：点下面「复制调用链接」，在链接末尾 input= 后面接上要处理的文字。\n注意：调用链接是给别的 App 用的，不要粘贴到上面的输入框里。")
+                    .font(.subheadline)
+            }
             Section("给其他应用调用") {
                 Button {
-                    let n = name.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? name
-                    UIPasteboard.general.string = "tstzbot://run?name=\(n)&input="
+                    UIPasteboard.general.string = link
                     copied = true
                 } label: { Label(copied ? "已复制调用链接" : "复制调用链接", systemImage: "link") }
             }
@@ -299,6 +324,26 @@ struct SkillRunView: View {
         .navigationBarTitleDisplayMode(.inline)
         .scrollDismissesKeyboard(.immediately)
         .toolbar { ToolbarItemGroup(placement: .keyboard) { Spacer(); Button("完成") { hideKeyboard() } } }
+        .onAppear { desc = Skills.list().first { $0.s("name") == name }?.s("desc") ?? "" }
+    }
+
+    func run() {
+        hideKeyboard()
+        copied = false
+        if input.hasPrefix("tstzbot://") {
+            ok = false
+            out = "这里要填的是要处理的文字，不是调用链接。调用链接是给快捷指令或其他 App 用的。请清空后重新输入。"
+            return
+        }
+        let r = Skills.run(name, input)
+        ok = r.0
+        if !r.0 && r.1.contains("没有返回") {
+            out = input.isEmpty
+                ? "这个技能需要输入内容：请先在上面「输入内容」里填写要处理的文字，再点运行。"
+                : "脚本运行了但没有产出结果，可能不适合这段输入。可以换一段文字试试，或删除后用一句话重新创建。"
+        } else {
+            out = r.1
+        }
     }
 }
 
@@ -404,7 +449,7 @@ struct AddConnectorView: View {
                 }
             }
         }
-        .presentationBackground(Brand.bg)
+        .presentationBackground(Brand.page)
     }
 }
 
@@ -453,6 +498,7 @@ struct ShortcutsView: View {
             }
             Section("本 App 提供的动作") {
                 action("sparkles", "询问助理", "把一句话交给助理，拿到回答")
+                action("character.bubble", "翻译屏幕", "接收「截屏」的结果，翻译后把译文贴回原图")
                 action("magnifyingglass", "检索知识库", "按语义查找知识库内容")
                 action("tray.and.arrow.down", "加入知识库", "把文字存进知识库")
                 action("wand.and.stars", "运行脚本技能", "运行你创建的脚本并返回结果")
