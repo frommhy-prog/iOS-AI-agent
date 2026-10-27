@@ -4,7 +4,7 @@ import SwiftUI
 struct LocalModelPage: View {
     @ObservedObject private var m = LocalLLM.shared
     @AppStorage("localOn") private var on = true
-    @AppStorage("localModelID") private var selected = LocalLLM.models[1].id
+    @AppStorage("localModelID") private var selected = LocalLLM.defaultID
 
     var body: some View {
         List {
