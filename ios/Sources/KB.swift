@@ -112,4 +112,31 @@ final class KB {
         }
         return scored.sorted { $0.0 > $1.0 }.prefix(k).map { $0.1 }
     }
+
+    // 只看词面重合的检索：用于「每个问题都自动先查一遍知识库」。
+    // 句向量在不相关的句子之间也有不低的相似度，自动带入会塞进一堆无关内容，所以这里不用它。
+    private static let stopChars: Set<Character> = ["的", "了", "是", "我", "你", "他", "她", "它", "吗", "呢", "吧", "啊", "么", "和", "与", "在", "有", "不", "这", "那", "个", "请", "帮", "要", "想", "能", "会", "可", "以", "什", "怎", "样", "一", "下"]
+
+    func relevant(_ q: String, k: Int = 3, minScore: Double = 0.25) -> [String] {
+        let qg = grams(q).filter { g in !g.contains { Self.stopChars.contains($0) } }
+        guard !qg.isEmpty else { return [] }
+        let rows = DB.shared.rows("SELECT text FROM chunk")
+        guard !rows.isEmpty else { return [] }
+        var scored: [(Double, String)] = []
+        for r in rows {
+            let t = r.s("text")
+            let hit = qg.intersection(grams(t)).count
+            if hit == 0 { continue }
+            let sc = Double(hit) / Double(qg.count)
+            if sc >= minScore { scored.append((sc, t)) }
+        }
+        return scored.sorted { $0.0 > $1.0 }.prefix(k).map { $0.1 }
+    }
+
+    // 附在问题后面的知识库资料；没有明显相关的内容就返回空串
+    func context(_ q: String) -> String {
+        let hits = relevant(q)
+        if hits.isEmpty { return "" }
+        return "\n\n（用户知识库里可能相关的资料，相关才使用，不相关就忽略：\n" + hits.map { "- " + String($0.prefix(300)) }.joined(separator: "\n") + "）"
+    }
 }
