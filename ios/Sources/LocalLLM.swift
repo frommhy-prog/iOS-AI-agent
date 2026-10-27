@@ -248,10 +248,14 @@ final class FileFetcher: NSObject, URLSessionDownloadDelegate, @unchecked Sendab
 final class LocalLLM: ObservableObject {
     static let shared = LocalLLM()
 
+    // 默认模型：Qwen3-4B-Instruct-2507（非思考版，指令遵循、中文、工具调用都明显强于旧版 Qwen3 4B 与 Qwen2.5 3B）
+    static let defaultID = "mlx-community/Qwen3-4B-Instruct-2507-4bit"
+
     static let models: [LocalModel] = [
+        LocalModel(id: "mlx-community/Qwen3-4B-Instruct-2507-4bit", name: "Qwen3 4B 2507", gb: "2.3", note: "推荐：目前手机上最聪明的一档，中文与指令遵循最强"),
+        LocalModel(id: "mlx-community/Qwen2.5-3B-Instruct-4bit", name: "Qwen2.5 3B", gb: "1.8", note: "速度与质量均衡，占内存较少"),
         LocalModel(id: "mlx-community/Qwen2.5-1.5B-Instruct-4bit", name: "Qwen2.5 1.5B", gb: "0.9", note: "轻量，速度快，占内存少"),
-        LocalModel(id: "mlx-community/Qwen2.5-3B-Instruct-4bit", name: "Qwen2.5 3B", gb: "1.8", note: "推荐：中文好，速度与质量均衡"),
-        LocalModel(id: "mlx-community/Qwen3-4B-4bit", name: "Qwen3 4B", gb: "2.3", note: "更强，占用内存更大")
+        LocalModel(id: "mlx-community/Qwen3-4B-4bit", name: "Qwen3 4B（旧）", gb: "2.3", note: "旧版混合思考模型，不再推荐")
     ]
 
     enum State: Equatable {
@@ -278,7 +282,7 @@ final class LocalLLM: ObservableObject {
     }
 
     var selectedID: String {
-        get { UserDefaults.standard.string(forKey: "localModelID") ?? Self.models[1].id }
+        get { UserDefaults.standard.string(forKey: "localModelID") ?? Self.defaultID }
         set { UserDefaults.standard.set(newValue, forKey: "localModelID") }
     }
 
@@ -382,21 +386,48 @@ final class LocalLLM: ObservableObject {
 
     var isLoaded: Bool { container != nil && loadedID == selectedID }
 
-    // 流式生成：每次请求新建一个会话，历史由调用方写进 prompt
+    // 把 (role, text) 整理成合法的多轮消息：必须从用户开头、角色交替、末尾是助理（下一条才是本次的用户消息）；总量限制在约 3000 字
+    nonisolated static func chatHistory(_ h: [(role: String, text: String)]) -> [MLXLMCommon.Chat.Message] {
+        var out: [MLXLMCommon.Chat.Message] = []
+        for m in h {
+            let t = m.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            if t.isEmpty { continue }
+            let isUser = m.role == "user"
+            if out.isEmpty && !isUser { continue }
+            let r: MLXLMCommon.Chat.Message.Role = isUser ? .user : .assistant
+            if let last = out.last, last.role == r {
+                out[out.count - 1].content += "\n" + t
+            } else {
+                out.append(isUser ? .user(t) : .assistant(t))
+            }
+        }
+        if let last = out.last, last.role == .user { out.removeLast() }
+        var total = out.reduce(0) { $0 + $1.content.count }
+        while total > 3000, out.count >= 2 {
+            total -= out[0].content.count + out[1].content.count
+            out.removeFirst(2)
+        }
+        return out
+    }
+
+    // 流式生成：history 是此前的多轮对话，prompt 是本次的用户消息
     func generate(
         instructions: String,
         prompt: String,
         maxTokens: Int = 800,
         temperature: Float = 0.4,
+        history: [(role: String, text: String)] = [],
         onText: @escaping (String) -> Void = { _ in }
     ) async throws -> String {
         let c = try await ensureLoaded()
         var gp = GenerateParameters()
         gp.maxTokens = maxTokens
         gp.temperature = temperature
+        gp.topP = 0.8 // 官方推荐的采样范围，减少胡话与重复
         let session = ChatSession(
             c,
             instructions: instructions,
+            history: Self.chatHistory(history),
             generateParameters: gp,
             additionalContext: ["enable_thinking": false])
         var acc = ""
