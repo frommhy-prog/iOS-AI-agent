@@ -43,7 +43,7 @@ jobs:
 
       - name: Package unsigned IPA for SideStore
         run: |
-          APP=$(find derivedData/Build/Products/Release-iphoneos -maxdepth 1 -name '*.app' | head -n 1)
+          APP=$(find derivedData/Build/Products -maxdepth 2 -name '*.app' | head -n 1)
           echo "Built app: $APP"
           test -n "$APP"
           /usr/libexec/PlistBuddy -c 'Print CFBundleDisplayName' "$APP/Info.plist"
